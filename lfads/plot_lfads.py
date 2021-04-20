@@ -21,7 +21,6 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import numpy as np
-import tensorflow as tf
 
 def _plot_item(W, name, full_name, nspaces):
   plt.figure()

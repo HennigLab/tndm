@@ -16,7 +16,7 @@
 #
 # ==============================================================================
 
-SYNTH_PATH=/tmp/rnn_synth_data_v1.0/
+SYNTH_PATH=./lfads/synth_data/generated/rnn_synth_data_v1.0/
 
 echo "Generating chaotic rnn data with no input pulses (g=1.5) with spiking noise"
 python -m lfads.synth_data.generate_chaotic_rnn_data --save_dir=$SYNTH_PATH --datafile_name=chaotic_rnn_no_inputs --synth_data_seed=5 --T=1.0 --C=400 --N=50 --S=50 --train_percentage=0.8 --nreplications=10 --g=1.5 --x0_std=1.0 --tau=0.025 --dt=0.01 --input_magnitude=0.0 --max_firing_rate=30.0 --noise_type='poisson'

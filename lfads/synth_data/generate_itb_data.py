@@ -18,7 +18,6 @@ from __future__ import print_function
 import h5py
 import numpy as np
 import os
-from six.moves import xrange
 import tensorflow as tf
 
 from lfads.utils import write_datasets
@@ -28,7 +27,7 @@ from lfads.synth_data.synthetic_data_utils import spikify_data, split_list_by_in
 
 DATA_DIR = "rnn_synth_data_v1.0"
 
-flags = tf.app.flags
+flags = tf.compat.v1.app.flags
 flags.DEFINE_string("save_dir", "/tmp/" + DATA_DIR + "/",
                     "Directory for saving data.")
 flags.DEFINE_string("datafile_name", "itb_rnn",
@@ -57,28 +56,29 @@ flags.DEFINE_string("checkpoint_path", "SAMPLE_CHECKPOINT",
                     that path.""")
 FLAGS = flags.FLAGS
 
+tf.compat.v1.disable_eager_execution() # this way, line 101 runs
 
 class IntegrationToBoundModel:
   def __init__(self, N):
     scale = 0.8 / float(N**0.5)
     self.N = N
-    self.Wh_nxn = tf.Variable(tf.random_normal([N, N], stddev=scale))
+    self.Wh_nxn = tf.Variable(tf.random.normal([N, N], stddev=scale))
     self.b_1xn = tf.Variable(tf.zeros([1, N]))
     self.Bu_1xn = tf.Variable(tf.zeros([1, N]))
-    self.Wro_nxo = tf.Variable(tf.random_normal([N, 1], stddev=scale))
+    self.Wro_nxo = tf.Variable(tf.random.normal([N, 1], stddev=scale))
     self.bro_o = tf.Variable(tf.zeros([1]))
 
   def call(self, h_tm1_bxn, u_bx1):
     act_t_bxn = tf.matmul(h_tm1_bxn, self.Wh_nxn) + self.b_1xn + u_bx1 * self.Bu_1xn
     h_t_bxn = tf.nn.tanh(act_t_bxn)
-    z_t = tf.nn.xw_plus_b(h_t_bxn, self.Wro_nxo, self.bro_o)
+    z_t = tf.compat.v1.nn.xw_plus_b(h_t_bxn, self.Wro_nxo, self.bro_o)
     return z_t, h_t_bxn
 
 def get_data_batch(batch_size, T, rng, u_std):
   u_bxt = rng.randn(batch_size, T) * u_std
   running_sum_b = np.zeros([batch_size])
   labels_bxt = np.zeros([batch_size, T])
-  for t in xrange(T):
+  for t in range(T):
     running_sum_b += u_bxt[:, t]
     labels_bxt[:, t] += running_sum_b
   labels_bxt = np.clip(labels_bxt, -1, 1)
@@ -97,10 +97,10 @@ ntimesteps = int(T / FLAGS.dt)
 batch_size = 1  # gives one example per ntrial
 
 model = IntegrationToBoundModel(N)
-inputs_ph_t = [tf.placeholder(tf.float32,
+inputs_ph_t = [tf.compat.v1.placeholder(tf.float32,
                               shape=[None, 1]) for _ in range(ntimesteps)]
 state = tf.zeros([batch_size, N])
-saver = tf.train.Saver()
+saver = tf.compat.v1.train.Saver()
 
 P_nxn = rng.randn(N,N) / np.sqrt(N)  # random projections
 
@@ -113,7 +113,7 @@ for inp in inputs_ph_t:
   outputs_t.append(output)
   states_t.append(state)
 
-with tf.Session() as sess:
+with tf.compat.v1.Session() as sess:
   # restore the latest model ckpt
   if FLAGS.checkpoint_path == "SAMPLE_CHECKPOINT":
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -135,7 +135,7 @@ with tf.Session() as sess:
     u_1xt, outs_1xt = get_data_batch(batch_size, ntimesteps, u_rng, FLAGS.u_std)
 
     feed_dict = {}
-    for t in xrange(ntimesteps):
+    for t in range(ntimesteps):
       feed_dict[inputs_ph_t[t]] = np.reshape(u_1xt[:,t], (batch_size,-1))
 
     states_t_bxn, outputs_t_bxn = sess.run([states_t, outputs_t],
@@ -144,7 +144,7 @@ with tf.Session() as sess:
     outputs_t_bxn = np.squeeze(np.asarray(outputs_t_bxn))
     r_sxt = np.dot(P_nxn, states_nxt)
 
-    for s in xrange(nreplications):
+    for s in range(nreplications):
       data_e.append(r_sxt)
       u_e.append(u_1xt)
       outs_e.append(outputs_t_bxn)

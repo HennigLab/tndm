@@ -41,10 +41,10 @@ class Poisson(object):
       The log-probability under the Poisson models for each element of
       bin_counts.
     """
-    k = tf.to_float(bin_counts)
+    k = tf.cast(bin_counts, dtype=tf.float32)
     # log poisson(k, r) = log(r^k * e^(-r) / k!) = k log(r) - r - log k!
     # log poisson(k, r=exp(x)) = k * x - exp(x) - lgamma(k + 1)
-    return k * self.logr - tf.exp(self.logr) - tf.lgamma(k + 1)
+    return k * self.logr - tf.exp(self.logr) - tf.math.lgamma(k + 1)
 
 
 def diag_gaussian_log_likelihood(z, mu=0.0, logvar=0.0):
@@ -105,7 +105,7 @@ class DiagonalGaussian(Gaussian):
     size__xz = [None, z_size]
     self.mean = mean            # bxn already
     self.logvar = logvar        # bxn already
-    self.noise = noise = tf.random_normal(tf.shape(logvar))
+    self.noise = noise = tf.random.normal(tf.shape(input=logvar))
     self.sample = mean + tf.exp(0.5 * logvar) * noise
     mean.set_shape(size__xz)
     logvar.set_shape(size__xz)
@@ -160,8 +160,8 @@ class LearnableDiagonalGaussian(Gaussian):
     assert var_max >= var_init, "Problems"
 
 
-    z_mean_1xn = tf.get_variable(name=name+"/mean", shape=size_1xn,
-                                 initializer=tf.constant_initializer(mean_init))
+    z_mean_1xn = tf.compat.v1.get_variable(name=name+"/mean", shape=size_1xn,
+                                 initializer=tf.compat.v1.constant_initializer(mean_init))
     self.mean_bxn = mean_bxn = tf.tile(z_mean_1xn, size_bx1)
     mean_bxn.set_shape(size__xn) # tile loses shape
 
@@ -172,18 +172,18 @@ class LearnableDiagonalGaussian(Gaussian):
       var_is_trainable = False
 
     z_logvar_1xn = \
-        tf.get_variable(name=(name+"/logvar"), shape=size_1xn,
-                        initializer=tf.constant_initializer(log_var_init),
+        tf.compat.v1.get_variable(name=(name+"/logvar"), shape=size_1xn,
+                        initializer=tf.compat.v1.constant_initializer(log_var_init),
                         trainable=var_is_trainable)
 
     if var_is_trainable:
       z_logit_var_1xn = tf.exp(z_logvar_1xn)
       z_var_1xn = tf.nn.sigmoid(z_logit_var_1xn)*(var_max-var_min) + var_min
-      z_logvar_1xn = tf.log(z_var_1xn)
+      z_logvar_1xn = tf.math.log(z_var_1xn)
 
     logvar_bxn = tf.tile(z_logvar_1xn, size_bx1)
     self.logvar_bxn = logvar_bxn
-    self.noise_bxn = noise_bxn = tf.random_normal(tf.shape(logvar_bxn))
+    self.noise_bxn = noise_bxn = tf.random.normal(tf.shape(input=logvar_bxn))
     self.sample_bxn = mean_bxn + tf.exp(0.5 * logvar_bxn) * noise_bxn
 
   def logp(self, z=None):
@@ -240,14 +240,14 @@ class DiagonalGaussianFromInput(Gaussian):
         way to control the amount of information getting through the stochastic
         layer.
     """
-    size_bxn = tf.stack([tf.shape(x_bxu)[0], z_size])
+    size_bxn = tf.stack([tf.shape(input=x_bxu)[0], z_size])
     self.mean_bxn = mean_bxn = linear(x_bxu, z_size, name=(name+"/mean"))
     logvar_bxn = linear(x_bxu, z_size, name=(name+"/logvar"))
     if var_min > 0.0:
-      logvar_bxn = tf.log(tf.exp(logvar_bxn) + var_min)
+      logvar_bxn = tf.math.log(tf.exp(logvar_bxn) + var_min)
     self.logvar_bxn = logvar_bxn
 
-    self.noise_bxn = noise_bxn = tf.random_normal(size_bxn)
+    self.noise_bxn = noise_bxn = tf.random.normal(size_bxn)
     self.noise_bxn.set_shape([None, z_size])
     self.sample_bxn = mean_bxn + tf.exp(0.5 * logvar_bxn) * noise_bxn
 
@@ -325,7 +325,7 @@ class LearnableAutoRegressive1Prior(GaussianProcess):
     size__xu = [None, z_size]
     # process variance, the variance at time t over all instantiations of AR(1)
     # with these parameters.
-    log_evar_inits_1xu = tf.expand_dims(tf.log(noise_variances), 0)
+    log_evar_inits_1xu = tf.expand_dims(tf.math.log(noise_variances), 0)
     self.logevars_1xu = logevars_1xu = \
         tf.Variable(log_evar_inits_1xu, name=name+"/logevars", dtype=tf.float32,
                     trainable=do_train_prior_ar_nvar)
@@ -333,7 +333,7 @@ class LearnableAutoRegressive1Prior(GaussianProcess):
     logevars_bxu.set_shape(size__xu) # tile loses shape
 
     # \tau, which is the autocorrelation time constant of the AR(1) process
-    log_atau_inits_1xu = tf.expand_dims(tf.log(autocorrelation_taus), 0)
+    log_atau_inits_1xu = tf.expand_dims(tf.math.log(autocorrelation_taus), 0)
     self.logataus_1xu = logataus_1xu = \
         tf.Variable(log_atau_inits_1xu, name=name+"/logatau", dtype=tf.float32,
                     trainable=do_train_prior_ar_atau)
@@ -352,7 +352,7 @@ class LearnableAutoRegressive1Prior(GaussianProcess):
     # logpvar = logevar - log(1-phi^2)
     # logpvar = logevar - (log(1-phi) + log(1+phi))
     self.logpvars_1xu = \
-        logevars_1xu - tf.log(1.0-phis_1xu) - tf.log(1.0+phis_1xu)
+        logevars_1xu - tf.math.log(1.0-phis_1xu) - tf.math.log(1.0+phis_1xu)
     self.logpvars_bxu = logpvars_bxu = tf.tile(self.logpvars_1xu, size_bx1)
     logpvars_bxu.set_shape(size__xu)
 
@@ -441,13 +441,13 @@ class KLCost_GaussianGaussian(object):
       assert isinstance(prior_z, Gaussian)
       # ln(2pi) terms cancel
       kl_b += 0.5 * tf.reduce_sum(
-          prior_z.logvar - z.logvar
+          input_tensor=prior_z.logvar - z.logvar
           + tf.exp(z.logvar - prior_z.logvar)
           + tf.square((z.mean - prior_z.mean) / tf.exp(0.5 * prior_z.logvar))
-          - 1.0, [1])
+          - 1.0, axis=[1])
 
     self.kl_cost_b = kl_b
-    self.kl_cost = tf.reduce_mean(kl_b)
+    self.kl_cost = tf.reduce_mean(input_tensor=kl_b)
 
 
 class KLCost_GaussianGaussianProcessSampled(object):
@@ -488,6 +488,6 @@ class KLCost_GaussianGaussianProcessSampled(object):
       z_tm1_bxu = z_t_bxu
 
     kl_bxu = logq_bxu - logp_bxu
-    kl_b = tf.reduce_sum(kl_bxu, [1])
+    kl_b = tf.reduce_sum(input_tensor=kl_bxu, axis=[1])
     self.kl_cost_b = kl_b
-    self.kl_cost = tf.reduce_mean(kl_b)
+    self.kl_cost = tf.reduce_mean(input_tensor=kl_b)

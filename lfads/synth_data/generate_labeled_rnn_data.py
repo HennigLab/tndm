@@ -18,7 +18,6 @@ from __future__ import print_function
 import os
 import h5py
 import numpy as np
-from six.moves import xrange
 
 from lfads.synth_data.synthetic_data_utils import generate_data, generate_rnn
 from lfads.synth_data.synthetic_data_utils import get_train_n_valid_inds
@@ -29,7 +28,7 @@ from lfads.utils import write_datasets
 
 DATA_DIR = "rnn_synth_data_v1.0"
 
-flags = tf.app.flags
+flags = tf.compat.v1.app.flags
 flags.DEFINE_string("save_dir", "/tmp/" + DATA_DIR + "/",
                     "Directory for saving data.")
 flags.DEFINE_string("datafile_name", "conditioned_rnn_data",
@@ -97,7 +96,7 @@ spikes_b = spikify_data(rates_b, rng, rnn_b['dt'], rnn_b['max_firing_rate'])
 # not the best way to do this but E is small enough
 rates = []
 spikes = []
-for trial in xrange(E):
+for trial in range(E):
   if rnn_to_use[trial] == 0:
     rates.append(rates_a[trial])
     spikes.append(spikes_a[trial])

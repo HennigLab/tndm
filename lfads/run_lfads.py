@@ -95,7 +95,7 @@ IC_PRIOR_VAR_SCALE = 0.1
 IC_PRIOR_VAR_MAX = 0.1
 IC_POST_VAR_MIN = 0.0001      # protection from KL blowing up
 
-flags = tf.app.flags
+flags = tf.compat.v1.app.flags
 flags.DEFINE_string("kind", "train",
                     "Type of model to build {train, \
                     posterior_sample_and_average, \
@@ -420,7 +420,7 @@ def build_model(hps, kind="train", datasets=None):
   build_kind = kind
   if build_kind == "write_model_params":
     build_kind = "train"
-  with tf.variable_scope("LFADS", reuse=None):
+  with tf.compat.v1.variable_scope("LFADS", reuse=None):
     model = LFADS(hps, kind=build_kind, datasets=datasets)
 
   if not os.path.exists(hps.lfads_save_dir):
@@ -442,9 +442,9 @@ def build_model(hps, kind="train", datasets=None):
   ckpt = tf.train.get_checkpoint_state(hps.lfads_save_dir,
                                        latest_filename=cp_pb_ln)
 
-  session = tf.get_default_session()
+  session = tf.compat.v1.get_default_session()
   print("ckpt: ", ckpt)
-  if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
+  if ckpt and tf.compat.v1.train.checkpoint_exists(ckpt.model_checkpoint_path):
     print("Reading model parameters from %s" % ckpt.model_checkpoint_path)
     saver.restore(session, ckpt.model_checkpoint_path)
   else:
@@ -457,7 +457,7 @@ def build_model(hps, kind="train", datasets=None):
       print("Are you sure you sure a checkpoint in ", hps.lfads_save_dir,
             " exists?")
 
-    tf.global_variables_initializer().run()
+    tf.compat.v1.global_variables_initializer().run()
 
   if ckpt:
     train_step_str = re.search('-[0-9]+$', ckpt.model_checkpoint_path).group()
@@ -604,7 +604,7 @@ def train(hps, datasets):
   """
   model = build_model(hps, kind="train", datasets=datasets)
   if hps.do_reset_learning_rate:
-    sess = tf.get_default_session()
+    sess = tf.compat.v1.get_default_session()
     sess.run(model.learning_rate.initializer)
 
   model.train_model(datasets)
@@ -788,11 +788,11 @@ def main(_):
     hps.num_steps_for_gen_ic = hps.num_steps
 
   # Build and run the model, for varying purposes.
-  config = tf.ConfigProto(allow_soft_placement=True,
+  config = tf.compat.v1.ConfigProto(allow_soft_placement=True,
                           log_device_placement=False)
   if FLAGS.allow_gpu_growth:
     config.gpu_options.allow_growth = True
-  sess = tf.Session(config=config)
+  sess = tf.compat.v1.Session(config=config)
   with sess.as_default():
     with tf.device(hps.device):
       if kind == "train":
@@ -812,4 +812,4 @@ def main(_):
 
 
 if __name__ == "__main__":
-    tf.app.run()
+    tf.compat.v1.app.run()

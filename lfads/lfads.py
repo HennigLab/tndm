@@ -136,8 +136,8 @@ class GRU(object):
     else:
       xh = h
 
-    with tf.variable_scope(scope or type(self).__name__):  # "GRU"
-      with tf.variable_scope("Gates"):  # Reset gate and update gate.
+    with tf.compat.v1.variable_scope(scope or type(self).__name__):  # "GRU"
+      with tf.compat.v1.variable_scope("Gates"):  # Reset gate and update gate.
         # We start with bias of 1.0 to not reset and not update.
         r, u = tf.split(axis=1, num_or_size_splits=2, value=linear(xh,
                                      2 * self._num_units,
@@ -145,7 +145,7 @@ class GRU(object):
                                      name="xh_2_ru",
                                      collections=self._collections))
         r, u = tf.sigmoid(r), tf.sigmoid(u + self._forget_bias)
-      with tf.variable_scope("Candidate"):
+      with tf.compat.v1.variable_scope("Candidate"):
         xrh = tf.concat(axis=1, values=[x, r * h])
         c = tf.tanh(linear(xrh, self._num_units, name="xrh_2_c",
                            collections=self._collections))
@@ -223,8 +223,8 @@ class GenGRU(object):
 
     x = inputs
     h = state
-    with tf.variable_scope(scope or type(self).__name__):  # "GRU"
-      with tf.variable_scope("Gates"):  # Reset gate and update gate.
+    with tf.compat.v1.variable_scope(scope or type(self).__name__):  # "GRU"
+      with tf.compat.v1.variable_scope("Gates"):  # Reset gate and update gate.
         # We start with bias of 1.0 to not reset and not update.
         r_x = u_x = 0.0
         if x is not None:
@@ -246,7 +246,7 @@ class GenGRU(object):
         u = u_x + u_h
         r, u = tf.sigmoid(r), tf.sigmoid(u + self._forget_bias)
 
-      with tf.variable_scope("Candidate"):
+      with tf.compat.v1.variable_scope("Candidate"):
         c_x = 0.0
         if x is not None:
           c_x = linear(x, self._num_units, name="x_2_c", do_bias=False,
@@ -313,7 +313,7 @@ class LFADS(object):
 
     # Define the data placeholder, and deal with all parts of the graph
     # that are dataset dependent.
-    self.dataName = tf.placeholder(tf.string, shape=())
+    self.dataName = tf.compat.v1.placeholder(tf.string, shape=())
     # The batch_size to be inferred from data, as normal.
     # Additionally, the data_dim will be inferred as well, allowing for a
     # single placeholder for all datasets, regardless of data dimension.
@@ -330,11 +330,11 @@ class LFADS(object):
       data_dtype = tf.float32
     else:
       assert False, "NIY"
-    self.dataset_ph = dataset_ph = tf.placeholder(data_dtype,
+    self.dataset_ph = dataset_ph = tf.compat.v1.placeholder(data_dtype,
                                                   [None, num_steps, None],
                                                   name="data")
-    self.train_step = tf.get_variable("global_step", [], tf.int64,
-                                      tf.zeros_initializer(),
+    self.train_step = tf.compat.v1.get_variable("global_step", [], tf.int64,
+                                      tf.compat.v1.zeros_initializer(),
                                       trainable=False)
     self.hps = hps
     ndatasets = hps.ndatasets
@@ -418,7 +418,7 @@ class LFADS(object):
       fns_in_fac_Ws[d] = makelambda(in_fac_W)
       fns_in_fac_bs[d] = makelambda(in_fac_b)
 
-    with tf.variable_scope("glm"):
+    with tf.compat.v1.variable_scope("glm"):
       out_identity_if_poss = False
       if len(dataset_names) == 1 and \
           factors_dim == hps.dataset_dims[dataset_names[0]]:
@@ -497,14 +497,14 @@ class LFADS(object):
 
     # External inputs (not changing by dataset, by definition).
     if hps.ext_input_dim > 0:
-      self.ext_input = tf.placeholder(tf.float32,
+      self.ext_input = tf.compat.v1.placeholder(tf.float32,
                                       [None, num_steps, ext_input_dim],
                                       name="ext_input")
     else:
       self.ext_input = None
     ext_input_bxtxi = self.ext_input
 
-    self.keep_prob = keep_prob = tf.placeholder(tf.float32, [], "keep_prob")
+    self.keep_prob = keep_prob = tf.compat.v1.placeholder(tf.float32, [], "keep_prob")
     self.batch_size = batch_size = int(hps.batch_size)
     self.learning_rate = tf.Variable(float(hps.learning_rate_init),
                                      trainable=False, name="learning_rate")
@@ -512,9 +512,9 @@ class LFADS(object):
         self.learning_rate * hps.learning_rate_decay_factor)
 
     # Dropout the data.
-    dataset_do_bxtxd = tf.nn.dropout(tf.to_float(dataset_ph), keep_prob)
+    dataset_do_bxtxd = tf.nn.dropout(tf.cast(dataset_ph, dtype=tf.float32), 1 - (keep_prob))
     if hps.ext_input_dim > 0:
-      ext_input_do_bxtxi = tf.nn.dropout(ext_input_bxtxi, keep_prob)
+      ext_input_do_bxtxi = tf.nn.dropout(ext_input_bxtxi, 1 - (keep_prob))
     else:
       ext_input_do_bxtxi = None
 
@@ -539,7 +539,7 @@ class LFADS(object):
         dstr = "_rev"
         time_fwd_or_rev = reversed(range(num_steps_to_encode))
 
-      with tf.variable_scope(name+"_enc"+dstr, reuse=False):
+      with tf.compat.v1.variable_scope(name+"_enc"+dstr, reuse=False):
         enc_state = tf.tile(
             tf.Variable(tf.zeros([1, enc_cell.state_size]),
                         name=name+"_enc_t0"+dstr), tf.stack([batch_size, 1]))
@@ -547,7 +547,7 @@ class LFADS(object):
 
       enc_outs = [None] * num_steps_to_encode
       for i, t in enumerate(time_fwd_or_rev):
-        with tf.variable_scope(name+"_enc"+dstr, reuse=True if i > 0 else None):
+        with tf.compat.v1.variable_scope(name+"_enc"+dstr, reuse=True if i > 0 else None):
           dataset_t_bxd = dataset_bxtxd[:,t,:]
           in_fac_t_bxf = tf.matmul(dataset_t_bxd, this_in_fac_W) + this_in_fac_b
           in_fac_t_bxf.set_shape([None, used_in_factors_dim])
@@ -602,7 +602,7 @@ class LFADS(object):
     # STOCHASTIC LATENT VARIABLES, priors and posteriors
     # (initial conditions g0, and control inputs, u_t)
     # Note that zs represent all the stochastic latent variables.
-    with tf.variable_scope("z", reuse=False):
+    with tf.compat.v1.variable_scope("z", reuse=False):
       self.prior_zs_g0 = None
       self.posterior_zs_g0 = None
       self.g0s_val = None
@@ -614,7 +614,7 @@ class LFADS(object):
                                       var_init=hps.ic_prior_var_scale,
                                       var_max=hps.ic_prior_var_max)
         ic_enc = tf.concat(axis=1, values=[ic_enc_fwd[-1], ic_enc_rev[0]])
-        ic_enc = tf.nn.dropout(ic_enc, keep_prob)
+        ic_enc = tf.nn.dropout(ic_enc, 1 - (keep_prob))
         self.posterior_zs_g0 = \
             DiagonalGaussianFromInput(ic_enc, ic_dim, "ic_enc_2_post_g0",
                                       var_min=hps.ic_post_var_min)
@@ -660,7 +660,7 @@ class LFADS(object):
                                 rec_weight_scale=hps.cell_weight_scale,
                                 clip_value=hps.cell_clip_value,
                                 recurrent_collections=['l2_con_reg'])
-      with tf.variable_scope("con", reuse=False):
+      with tf.compat.v1.variable_scope("con", reuse=False):
         self.con_ics = tf.tile(
             tf.Variable(tf.zeros([1, hps.con_dim*con_cell.state_multiplier]),
                         name="c0"),
@@ -673,7 +673,7 @@ class LFADS(object):
                               rec_weight_scale=hps.gen_cell_rec_weight_scale,
                               clip_value=hps.cell_clip_value,
                               recurrent_collections=['l2_gen_reg'])
-    with tf.variable_scope("gen", reuse=False):
+    with tf.compat.v1.variable_scope("gen", reuse=False):
       if ic_dim == 0:
         self.gen_ics = tf.tile(
               tf.Variable(tf.zeros([1, gen_cell.state_size]), name="g0"),
@@ -693,7 +693,7 @@ class LFADS(object):
 
     self.rates = rates = [None] * num_steps
     # rates[-1] is collected to potentially feed back to controller
-    with tf.variable_scope("glm", reuse=False):
+    with tf.compat.v1.variable_scope("glm", reuse=False):
       if hps.output_dist == 'poisson':
         log_rates_t0 = tf.matmul(factors[-1], this_out_fac_W) + this_out_fac_b
         log_rates_t0.set_shape([None, None])
@@ -755,8 +755,8 @@ class LFADS(object):
             assert False, "NIY"
 
         con_in_t = tf.concat(axis=1, values=con_in_list_t)
-        con_in_t = tf.nn.dropout(con_in_t, keep_prob)
-        with tf.variable_scope("con", reuse=True if t > 0 else None):
+        con_in_t = tf.nn.dropout(con_in_t, 1 - (keep_prob))
+        with tf.compat.v1.variable_scope("con", reuse=True if t > 0 else None):
           con_outs[t], con_states[t] = con_cell(con_in_t, con_states[t-1])
           posterior_zs_co[t] = \
             DiagonalGaussianFromInput(con_outs[t], co_dim,
@@ -782,13 +782,13 @@ class LFADS(object):
 
       # Generator
       data_t_bxd = dataset_ph[:,t,:]
-      with tf.variable_scope("gen", reuse=True if t > 0 else None):
+      with tf.compat.v1.variable_scope("gen", reuse=True if t > 0 else None):
         gen_outs[t], gen_states[t] = gen_cell(gen_inputs[t], gen_states[t-1])
-        gen_outs[t] = tf.nn.dropout(gen_outs[t], keep_prob)
-      with tf.variable_scope("gen", reuse=True): # ic defined it above
+        gen_outs[t] = tf.nn.dropout(gen_outs[t], 1 - (keep_prob))
+      with tf.compat.v1.variable_scope("gen", reuse=True): # ic defined it above
         factors[t] = linear(gen_outs[t], factors_dim, do_bias=False,
                             normalized=True, name="gen_2_fac")
-      with tf.variable_scope("glm", reuse=True if t > 0 else None):
+      with tf.compat.v1.variable_scope("glm", reuse=True if t > 0 else None):
         if hps.output_dist == 'poisson':
           log_rates_t = tf.matmul(factors[t], this_out_fac_W) + this_out_fac_b
           log_rates_t.set_shape([None, None])
@@ -810,7 +810,7 @@ class LFADS(object):
         else:
           assert False, "NIY"
 
-        log_p_xgz_b += tf.reduce_sum(loglikelihood_t, [1])
+        log_p_xgz_b += tf.reduce_sum(input_tensor=loglikelihood_t, axis=[1])
 
     # Correlation of inferred inputs cost.
     self.corr_cost = tf.constant(0.0)
@@ -823,7 +823,7 @@ class LFADS(object):
             u_mean_t = posterior_zs_co[t].mean
             sum_corr_ij += u_mean_t[:,i]*u_mean_t[:,j]
           all_sum_corr.append(0.5 * tf.square(sum_corr_ij))
-      self.corr_cost = tf.reduce_mean(all_sum_corr) # div by batch and by n*(n-1)/2 pairs
+      self.corr_cost = tf.reduce_mean(input_tensor=all_sum_corr) # div by batch and by n*(n-1)/2 pairs
 
     # Variational Lower Bound on posterior, p(z|x), plus reconstruction cost.
     # KL and reconstruction costs are normalized only by batch size, not by
@@ -851,17 +851,17 @@ class LFADS(object):
       # L = -KL + log p(x|z), to maximize bound on likelihood
       # -L = KL - log p(x|z), to minimize bound on NLL
       # so 'reconstruction cost' is negative log likelihood
-      self.recon_cost = - tf.reduce_mean(log_p_xgz_b)
-      self.kl_cost = tf.reduce_mean(kl_cost_g0_b + kl_cost_co_b)
+      self.recon_cost = - tf.reduce_mean(input_tensor=log_p_xgz_b)
+      self.kl_cost = tf.reduce_mean(input_tensor=kl_cost_g0_b + kl_cost_co_b)
 
       lb_on_ll_b = log_p_xgz_b - kl_cost_g0_b - kl_cost_co_b
 
       # VAE error averages outside the log
-      self.nll_bound_vae = -tf.reduce_mean(lb_on_ll_b)
+      self.nll_bound_vae = -tf.reduce_mean(input_tensor=lb_on_ll_b)
 
       # IWAE error averages inside the log
-      k = tf.cast(tf.shape(log_p_xgz_b)[0], tf.float32)
-      iwae_lb_on_ll = -tf.log(k) + log_sum_exp(lb_on_ll_b)
+      k = tf.cast(tf.shape(input=log_p_xgz_b)[0], tf.float32)
+      iwae_lb_on_ll = -tf.math.log(k) + log_sum_exp(lb_on_ll_b)
       self.nll_bound_iwae = -iwae_lb_on_ll
 
     # L2 regularization on the generator, normalized by number of parameters.
@@ -869,15 +869,15 @@ class LFADS(object):
     if self.hps.l2_gen_scale > 0.0 or self.hps.l2_con_scale > 0.0:
       l2_costs = []
       l2_numels = []
-      l2_reg_var_lists = [tf.get_collection('l2_gen_reg'),
-                          tf.get_collection('l2_con_reg')]
+      l2_reg_var_lists = [tf.compat.v1.get_collection('l2_gen_reg'),
+                          tf.compat.v1.get_collection('l2_con_reg')]
       l2_reg_scales = [self.hps.l2_gen_scale, self.hps.l2_con_scale]
       for l2_reg_vars, l2_scale in zip(l2_reg_var_lists, l2_reg_scales):
         for v in l2_reg_vars:
-          numel = tf.reduce_prod(tf.concat(axis=0, values=tf.shape(v)))
+          numel = tf.reduce_prod(input_tensor=tf.concat(axis=0, values=tf.shape(input=v)))
           numel_f = tf.cast(numel, tf.float32)
           l2_numels.append(numel_f)
-          v_l2 = tf.reduce_sum(v*v)
+          v_l2 = tf.reduce_sum(input_tensor=v*v)
           l2_costs.append(0.5 * l2_scale * v_l2)
       self.l2_cost = tf.add_n(l2_costs) / tf.add_n(l2_numels)
 
@@ -904,10 +904,10 @@ class LFADS(object):
 
     if kind != "train":
       # save every so often
-      self.seso_saver = tf.train.Saver(tf.global_variables(),
+      self.seso_saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables(),
                                        max_to_keep=hps.max_ckpt_to_keep)
       # lowest validation error
-      self.lve_saver = tf.train.Saver(tf.global_variables(),
+      self.lve_saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables(),
                                       max_to_keep=hps.max_ckpt_to_keep_lve)
 
       return
@@ -916,23 +916,23 @@ class LFADS(object):
     # train the io matrices only
     if self.hps.do_train_io_only:
       self.train_vars = tvars = \
-        tf.get_collection('IO_transformations',
-                          scope=tf.get_variable_scope().name)
+        tf.compat.v1.get_collection('IO_transformations',
+                          scope=tf.compat.v1.get_variable_scope().name)
     # train the encoder only
     elif self.hps.do_train_encoder_only:
       tvars1 = \
-        tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+        tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
                           scope='LFADS/ic_enc_*')
       tvars2 = \
-        tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+        tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
                           scope='LFADS/z/ic_enc_*')
 
       self.train_vars = tvars = tvars1 + tvars2
     # train all variables
     else:
       self.train_vars = tvars = \
-        tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                          scope=tf.get_variable_scope().name)
+        tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
+                          scope=tf.compat.v1.get_variable_scope().name)
     print("done.")
     print("Model Variables (to be optimized): ")
     total_params = 0
@@ -942,72 +942,72 @@ class LFADS(object):
       total_params += np.prod(shape)
     print("Total model parameters: ", total_params)
 
-    grads = tf.gradients(self.cost, tvars)
+    grads = tf.gradients(ys=self.cost, xs=tvars)
     grads, grad_global_norm = tf.clip_by_global_norm(grads, hps.max_grad_norm)
-    opt = tf.train.AdamOptimizer(self.learning_rate, beta1=0.9, beta2=0.999,
+    opt = tf.compat.v1.train.AdamOptimizer(self.learning_rate, beta1=0.9, beta2=0.999,
                                  epsilon=1e-01)
     self.grads = grads
     self.grad_global_norm = grad_global_norm
     self.train_op = opt.apply_gradients(
         zip(grads, tvars), global_step=self.train_step)
 
-    self.seso_saver = tf.train.Saver(tf.global_variables(),
+    self.seso_saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables(),
                                      max_to_keep=hps.max_ckpt_to_keep)
 
     # lowest validation error
-    self.lve_saver = tf.train.Saver(tf.global_variables(),
+    self.lve_saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables(),
                                     max_to_keep=hps.max_ckpt_to_keep)
 
     # SUMMARIES, used only during training.
     # example summary
-    self.example_image = tf.placeholder(tf.float32, shape=[1,None,None,3],
+    self.example_image = tf.compat.v1.placeholder(tf.float32, shape=[1,None,None,3],
                                         name='image_tensor')
-    self.example_summ = tf.summary.image("LFADS example", self.example_image,
+    self.example_summ = tf.compat.v1.summary.image("LFADS example", self.example_image,
                                          collections=["example_summaries"])
 
     # general training summaries
-    self.lr_summ = tf.summary.scalar("Learning rate", self.learning_rate)
-    self.kl_weight_summ = tf.summary.scalar("KL weight", self.kl_weight)
-    self.l2_weight_summ = tf.summary.scalar("L2 weight", self.l2_weight)
-    self.corr_cost_summ = tf.summary.scalar("Corr cost", self.weight_corr_cost)
-    self.grad_global_norm_summ = tf.summary.scalar("Gradient global norm",
+    self.lr_summ = tf.compat.v1.summary.scalar("Learning rate", self.learning_rate)
+    self.kl_weight_summ = tf.compat.v1.summary.scalar("KL weight", self.kl_weight)
+    self.l2_weight_summ = tf.compat.v1.summary.scalar("L2 weight", self.l2_weight)
+    self.corr_cost_summ = tf.compat.v1.summary.scalar("Corr cost", self.weight_corr_cost)
+    self.grad_global_norm_summ = tf.compat.v1.summary.scalar("Gradient global norm",
                                                    self.grad_global_norm)
     if hps.co_dim > 0:
       self.atau_summ = [None] * hps.co_dim
       self.pvar_summ = [None] * hps.co_dim
       for c in range(hps.co_dim):
         self.atau_summ[c] = \
-            tf.summary.scalar("AR Autocorrelation taus " + str(c),
+            tf.compat.v1.summary.scalar("AR Autocorrelation taus " + str(c),
                               tf.exp(self.prior_zs_ar_con.logataus_1xu[0,c]))
         self.pvar_summ[c] = \
-            tf.summary.scalar("AR Variances " + str(c),
+            tf.compat.v1.summary.scalar("AR Variances " + str(c),
                               tf.exp(self.prior_zs_ar_con.logpvars_1xu[0,c]))
 
     # cost summaries, separated into different collections for
     # training vs validation.  We make placeholders for these, because
     # even though the graph computes these costs on a per-batch basis,
     # we want to report the more reliable metric of per-epoch cost.
-    kl_cost_ph = tf.placeholder(tf.float32, shape=[], name='kl_cost_ph')
-    self.kl_t_cost_summ = tf.summary.scalar("KL cost (train)", kl_cost_ph,
+    kl_cost_ph = tf.compat.v1.placeholder(tf.float32, shape=[], name='kl_cost_ph')
+    self.kl_t_cost_summ = tf.compat.v1.summary.scalar("KL cost (train)", kl_cost_ph,
                                             collections=["train_summaries"])
-    self.kl_v_cost_summ = tf.summary.scalar("KL cost (valid)", kl_cost_ph,
+    self.kl_v_cost_summ = tf.compat.v1.summary.scalar("KL cost (valid)", kl_cost_ph,
                                             collections=["valid_summaries"])
-    l2_cost_ph = tf.placeholder(tf.float32, shape=[], name='l2_cost_ph')
-    self.l2_cost_summ = tf.summary.scalar("L2 cost", l2_cost_ph,
+    l2_cost_ph = tf.compat.v1.placeholder(tf.float32, shape=[], name='l2_cost_ph')
+    self.l2_cost_summ = tf.compat.v1.summary.scalar("L2 cost", l2_cost_ph,
                                           collections=["train_summaries"])
 
-    recon_cost_ph = tf.placeholder(tf.float32, shape=[], name='recon_cost_ph')
-    self.recon_t_cost_summ = tf.summary.scalar("Reconstruction cost (train)",
+    recon_cost_ph = tf.compat.v1.placeholder(tf.float32, shape=[], name='recon_cost_ph')
+    self.recon_t_cost_summ = tf.compat.v1.summary.scalar("Reconstruction cost (train)",
                                                recon_cost_ph,
                                                collections=["train_summaries"])
-    self.recon_v_cost_summ = tf.summary.scalar("Reconstruction cost (valid)",
+    self.recon_v_cost_summ = tf.compat.v1.summary.scalar("Reconstruction cost (valid)",
                                                recon_cost_ph,
                                                collections=["valid_summaries"])
 
-    total_cost_ph = tf.placeholder(tf.float32, shape=[], name='total_cost_ph')
-    self.cost_t_summ = tf.summary.scalar("Total cost (train)", total_cost_ph,
+    total_cost_ph = tf.compat.v1.placeholder(tf.float32, shape=[], name='total_cost_ph')
+    self.cost_t_summ = tf.compat.v1.summary.scalar("Total cost (train)", total_cost_ph,
                                          collections=["train_summaries"])
-    self.cost_v_summ = tf.summary.scalar("Total cost (valid)", total_cost_ph,
+    self.cost_v_summ = tf.compat.v1.summary.scalar("Total cost (valid)", total_cost_ph,
                                          collections=["valid_summaries"])
 
     self.kl_cost_ph = kl_cost_ph
@@ -1016,14 +1016,14 @@ class LFADS(object):
     self.total_cost_ph = total_cost_ph
 
     # Merged summaries, for easy coding later.
-    self.merged_examples = tf.summary.merge_all(key="example_summaries")
-    self.merged_generic = tf.summary.merge_all() # default key is 'summaries'
-    self.merged_train = tf.summary.merge_all(key="train_summaries")
-    self.merged_valid = tf.summary.merge_all(key="valid_summaries")
+    self.merged_examples = tf.compat.v1.summary.merge_all(key="example_summaries")
+    self.merged_generic = tf.compat.v1.summary.merge_all() # default key is 'summaries'
+    self.merged_train = tf.compat.v1.summary.merge_all(key="train_summaries")
+    self.merged_valid = tf.compat.v1.summary.merge_all(key="valid_summaries")
 
-    session = tf.get_default_session()
+    session = tf.compat.v1.get_default_session()
     self.logfile = os.path.join(hps.lfads_save_dir, "lfads_log")
-    self.writer = tf.summary.FileWriter(self.logfile)
+    self.writer = tf.compat.v1.summary.FileWriter(self.logfile)
 
   def build_feed_dict(self, train_name, data_bxtxd, ext_input_bxtxi=None,
                       keep_prob=None):
@@ -1264,7 +1264,7 @@ class LFADS(object):
     epoch_kl_cost = total_kl_cost / epoch_size
 
     if do_save_ckpt:
-      session = tf.get_default_session()
+      session = tf.compat.v1.get_default_session()
       checkpoint_path = os.path.join(self.hps.lfads_save_dir,
                                      self.hps.checkpoint_name + '.ckpt')
       self.seso_saver.save(session, checkpoint_path,
@@ -1300,7 +1300,7 @@ class LFADS(object):
     kind_ext_input = kind + '_ext_input'
 
     total_cost = total_recon_cost = total_kl_cost = 0.0
-    session = tf.get_default_session()
+    session = tf.compat.v1.get_default_session()
     epoch_size = len(all_name_example_idx_pairs)
     evaled_ops_list = []
     for name, example_idxs in all_name_example_idx_pairs:
@@ -1343,7 +1343,7 @@ class LFADS(object):
     has_any_valid_set = summary_values['has_any_valid_set']
     i = summary_values['nepochs']
 
-    session = tf.get_default_session()
+    session = tf.compat.v1.get_default_session()
     train_summ, train_step = session.run([self.merged_train,
                                           self.train_step],
                              feed_dict={self.l2_cost_ph:l2_cost,
@@ -1429,7 +1429,7 @@ class LFADS(object):
     feed_dict = self.build_feed_dict(data_name, train_data_bxtxd,
                                      train_ext_input_bxtxi, keep_prob=1.0)
 
-    session = tf.get_default_session()
+    session = tf.compat.v1.get_default_session()
     generic_summ = session.run(self.merged_generic, feed_dict=feed_dict)
     self.writer.add_summary(generic_summ, train_step)
 
@@ -1489,7 +1489,7 @@ class LFADS(object):
         has_any_valid_set = True
         break
 
-    session = tf.get_default_session()
+    session = tf.compat.v1.get_default_session()
     lr = session.run(self.learning_rate)
     lr_stop = hps.learning_rate_stop
     i = -1
@@ -1614,7 +1614,7 @@ class LFADS(object):
         posterior mean, the generator initial conditions, the control inputs (if
         enabled), the state of the generator, the factors, and the rates.
     """
-    session = tf.get_default_session()
+    session = tf.compat.v1.get_default_session()
 
     # if fewer than batch_size provided, pad to batch_size
     hps = self.hps
@@ -2037,7 +2037,7 @@ class LFADS(object):
       tf_vals += [self.prior_zs_ar_con.samples_t]
     tf_vals_flat, fidxs = flatten(tf_vals)
 
-    session = tf.get_default_session()
+    session = tf.compat.v1.get_default_session()
     feed_dict = {}
     feed_dict[self.dataName] = dataset_name
     feed_dict[self.keep_prob] = 1.0
@@ -2102,8 +2102,8 @@ class LFADS(object):
       dictionary, or a nested dictionary, where the nesting is by variable
       scope.
     """
-    all_tf_vars = tf.global_variables()
-    session = tf.get_default_session()
+    all_tf_vars = tf.compat.v1.global_variables()
+    session = tf.compat.v1.get_default_session()
     all_tf_vars_eval = session.run(all_tf_vars)
     vars_dict = {}
     strs = ["LFADS"]
