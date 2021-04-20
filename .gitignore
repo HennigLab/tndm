@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Generated data & trained models
+lfads/synth_data/generated/
+lfads/synth_data/trained_itb/
+
+.DS_Store
