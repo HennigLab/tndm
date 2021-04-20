@@ -9,6 +9,7 @@ import psid
 from psid.evaluation import evalPrediction
 from psid.MatHelper import loadmat
 
+
 @pytest.fixture(scope='module')
 def tutorial_input_data():
     # Load data
