@@ -401,6 +401,14 @@ flags.DEFINE_integer("l2_start_step", L2_START_STEP,
 flags.DEFINE_integer("l2_increase_steps", L2_INCREASE_STEPS,
                      "Increase weight of l2 cost to avoid local minimum.")
 
+# Extras command line args to ignore for pytest to run
+flags.DEFINE_string("override-ini", '',
+                     "override-ini to be ignored.")
+flags.DEFINE_string("junit-xml", '',
+                     "junit-xml to be ignored.")
+flags.DEFINE_string("rootdir", '',
+                     "rootdir to be ignored.")
+
 FLAGS = flags.FLAGS
 
 
@@ -781,7 +789,7 @@ def main(_):
 
   # also store down the dimensionality of the data
   # - just pull from one set, required to be same for all sets
-  hps.num_steps = datasets.values()[0]['num_steps']
+  hps.num_steps = list(datasets.values())[0]['num_steps']
   hps.ndatasets = len(hps.dataset_names)
 
   if hps.num_steps_for_gen_ic > hps.num_steps:

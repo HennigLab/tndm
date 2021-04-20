@@ -143,8 +143,9 @@ def init_linear(in_size, out_size, do_bias=True, mat_init_value=None,
     if collections:
       w_collections += collections
     if mat_init_value is not None:
-      w = tf.Variable(mat_init_value, name=wname, collections=w_collections,
+      w = tf.compat.v1.get_variable(name=wname, shape=mat_init_value.shape, collections=w_collections,
                       trainable=trainable)
+      w.assign(mat_init_value)
     else:
       w = tf.compat.v1.get_variable(wname, [in_size, out_size], initializer=mat_init,
                           collections=w_collections, trainable=trainable)
@@ -160,9 +161,10 @@ def init_linear(in_size, out_size, do_bias=True, mat_init_value=None,
                           collections=b_collections,
                           trainable=trainable)
     else:
-      b = tf.Variable(bias_init_value, name=bname,
-                      collections=b_collections,
-                      trainable=trainable)
+      b = tf.compat.v1.get_variable(bname, bias_init_value.shape,
+                          collections=b_collections,
+                          trainable=trainable)
+      b.assign(bias_init_value)
 
   return (w, b)
 
@@ -184,9 +186,8 @@ def write_data(data_fname, data_dict, use_json=False, compression=None):
     os.makedirs(dir_name)
 
   if use_json:
-    the_file = open(data_fname,'wb')
-    json.dump(data_dict, the_file)
-    the_file.close()
+    with open(data_fname,'w') as fp:
+      json.dump(data_dict, fp, indent = 6)
   else:
     try:
       with h5py.File(data_fname, 'w') as hf:

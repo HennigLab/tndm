@@ -76,6 +76,8 @@ from lfads.utils import log_sum_exp, flatten
 from lfads.plot_lfads import plot_lfads
 
 
+tf.compat.v1.disable_eager_execution() # this way, line 317 runs
+
 class GRU(object):
   """Gated Recurrent Unit cell (cf. http://arxiv.org/abs/1406.1078).
 
@@ -490,10 +492,10 @@ class LFADS(object):
     pf_pairs_out_fac_Ws = zip(preds, fns_out_fac_Ws)
     pf_pairs_out_fac_bs = zip(preds, fns_out_fac_bs)
 
-    this_in_fac_W = tf.case(pf_pairs_in_fac_Ws, exclusive=True)
-    this_in_fac_b = tf.case(pf_pairs_in_fac_bs, exclusive=True)
-    this_out_fac_W = tf.case(pf_pairs_out_fac_Ws, exclusive=True)
-    this_out_fac_b = tf.case(pf_pairs_out_fac_bs, exclusive=True)
+    this_in_fac_W = tf.case(dict(pf_pairs_in_fac_Ws), exclusive=True)
+    this_in_fac_b = tf.case(dict(pf_pairs_in_fac_bs), exclusive=True)
+    this_out_fac_W = tf.case(dict(pf_pairs_out_fac_Ws), exclusive=True)
+    this_out_fac_b = tf.case(dict(pf_pairs_out_fac_bs), exclusive=True)
 
     # External inputs (not changing by dataset, by definition).
     if hps.ext_input_dim > 0:
@@ -1135,7 +1137,7 @@ class LFADS(object):
     if bmrem < batch_size:
       bmrem_examples = np.random.choice(range(nexamples),
                                         size=bmrem, replace=False)
-    example_idxs = range(nexamples) + list(bmrem_examples)
+    example_idxs = list(range(nexamples)) + list(bmrem_examples)
     mixed_example_idxs = np.random.permutation(example_idxs)
     example_idxs_e_x_edivb = np.reshape(mixed_example_idxs, [-1, batch_size])
     return example_idxs_e_x_edivb, bmrem
@@ -1399,7 +1401,7 @@ class LFADS(object):
     """
     hps = self.hps
     all_data_names = datasets.keys()
-    data_name = np.random.permutation(all_data_names)[0]
+    data_name = np.random.permutation(list(all_data_names))[0]
     data_dict = datasets[data_name]
     has_valid_set = True if data_dict['valid_data'] is not None else False
     cf = 1.0                  # plotting concern
