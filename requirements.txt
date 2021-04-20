@@ -4,3 +4,5 @@ h5py
 matplotlib
 six
 pathlib
+numpy
+sklearn
