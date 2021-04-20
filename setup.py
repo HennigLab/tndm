@@ -6,10 +6,10 @@ import os
 here = os.path.dirname(os.path.abspath(__file__))
 
 # Get the long description from the README file
-with open(os.path.join(here, 'lfads', 'README.md'), "r") as f:
+with open(os.path.join(here, 'README.md'), "r") as f:
     long_description = f.read()
 
-with open(os.path.join(here, 'lfads', 'requirements.txt'), "r") as f:
+with open(os.path.join(here, 'requirements.txt'), "r") as f:
     install_requires = f.readlines()
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
@@ -27,7 +27,7 @@ setup(
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name='lfads',  # Required
+    name='latentneural',  # Required
 
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
@@ -41,7 +41,7 @@ setup(
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
 
-    packages=["lfads"],
+    packages=["lfads", "psid"],
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
@@ -65,17 +65,11 @@ setup(
     # https://packaging.python.org/specifications/core-metadata/#description-content-type-optional
     long_description_content_type='text/markdown',  # Optional (see note above)
 
-    # This should be a valid link to your project's main homepage.
-    #
-    # This field corresponds to the "Home-Page" metadata field:
-    # https://packaging.python.org/specifications/core-metadata/#home-page-optional
-    url='https://github.com/lfads/models',  # Optional
-
     # Specify which Python versions you support. In contrast to the
     # 'Programming Language' classifiers above, 'pip install' will check this
     # and refuse to install the project if the version does not match. See
     # https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
-    python_requires='>=2.7, <3',
+    python_requires='>=3',
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
     # installed, so they must be valid existing projects.
