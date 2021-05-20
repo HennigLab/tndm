@@ -99,8 +99,9 @@ class LorenzGenerator(object):
         if seed is not None:
             np.random.seed(seed)
 
-        assert(l <= 3, 'Latent variables must be between 1 and 3')
-        assert(l >= 1, 'Latent variables must be between 1 and 3')
+        if (l > 3) or (l <1):
+            raise ValueError('Latent variables must be between 1 and 3')
+            
         z_list: List[np.ndarray] = []
         for _ in range(trials):
             t, z_tmp = self.generate_latent(x0=x0, y0=y0, z0=z0, start=start, stop=stop, step=step)
