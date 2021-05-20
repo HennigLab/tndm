@@ -6,3 +6,6 @@ six
 pathlib
 numpy
 sklearn
+imageio
+tensorflow-probability
+jupyter
