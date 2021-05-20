@@ -41,7 +41,7 @@ setup(
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
 
-    packages=["lfads", "psid"],
+    packages=["lfads", "psid", "lorenz"],
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
