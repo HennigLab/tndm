@@ -38,3 +38,6 @@ python -m lfads.synth_data.generate_itb_data --save_dir=$SYNTH_PATH --datafile_n
 
 echo "Generating chaotic rnn data with external input labels (no external input labels example in paper)"
 python -m lfads.synth_data.generate_labeled_rnn_data --save_dir=$SYNTH_PATH --datafile_name=chaotic_rnns_labeled --synth_data_seed=5 --T=1.0 --C=400 --N=50  --train_percentage=0.8 --nreplications=10 --g=1.5 --x0_std=1.0 --tau=0.025 --dt=0.01 --max_firing_rate=30.0
+
+# echo "Generating chaotic rnn data with no input pulses (g=1.5) with Gaussian noise - Short set"
+# python -m lfads.synth_data.generate_chaotic_rnn_data --save_dir=$SYNTH_PATH --datafile_name=gaussian_chaotic_rnn_no_inputs_short_set --synth_data_seed=5 --T=1.0 --C=10 --N=50 --S=50 --train_percentage=0.8 --nreplications=10 --g=1.5 --x0_std=1.0 --tau=0.025 --dt=0.01 --input_magnitude=0.0 --max_firing_rate=30.0 --noise_type='gaussian'

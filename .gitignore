@@ -135,3 +135,4 @@ lfads/synth_data/trained_itb/
 .DS_Store
 .vscode/
 lfads/synth_data/output/
+notebooks/lfads_jax_tutorial/generated/

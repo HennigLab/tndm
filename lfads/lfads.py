@@ -1471,7 +1471,7 @@ class LFADS(object):
                                feed_dict={self.example_image : example_image})
     self.writer.add_summary(example_summ)
 
-  def train_model(self, datasets):
+  def train_model(self, datasets, session=tf.compat.v1.get_default_session()):
     """Train the model, print per-epoch information, and save checkpoints.
 
     Loop over training epochs. The function that actually does the
@@ -1491,7 +1491,9 @@ class LFADS(object):
         has_any_valid_set = True
         break
 
-    session = tf.compat.v1.get_default_session()
+    if session is None:
+      session=tf.compat.v1.get_default_session()
+
     lr = session.run(self.learning_rate)
     lr_stop = hps.learning_rate_stop
     i = -1
