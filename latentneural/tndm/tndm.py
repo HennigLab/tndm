@@ -86,4 +86,4 @@ class TNDM(tf.keras.Model):
     if not self.built:
       assert all([f_i == i_i for f_i, i_i in zip(list(f.shape), list(inputs.shape))])
 
-    return b, f, (r_mean, r_logvar), (i_mean, i_logvar)
+    return f, b, (g0_r, r_mean, r_logvar), (g0_i, i_mean, i_logvar)

@@ -1,5 +1,4 @@
-# msc-project
-MSc Project
+# Latent Neural Variables
 
 If needed:
 ```

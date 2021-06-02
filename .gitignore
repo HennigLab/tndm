@@ -136,3 +136,4 @@ latentneural/legacy/lfads/original/synth_data/generated/
 notebooks/lfads_jax_tutorial/generated/
 notebooks/vae_quickstart/
 notebooks/lfads_jax_tutorial/
+test/legacy/lfads/original/output*

@@ -7,7 +7,7 @@ import shutil
 
 def test_lfads_chaotic_rnn_input_pulses_gaussian_noise():
     try:
-        shutil.rmtree('./test/lfads/output1')
+        shutil.rmtree('./test/legacy/lfads/original/output1')
     except FileNotFoundError as e:
         pass
 
@@ -17,7 +17,7 @@ def test_lfads_chaotic_rnn_input_pulses_gaussian_noise():
     FLAGS.kind = 'train'
     FLAGS.data_dir = './latentneural/legacy/lfads/original/synth_data/generated/rnn_synth_data_v1.0'
     FLAGS.data_filename_stem = 'gaussian_chaotic_rnn_no_inputs'
-    FLAGS.lfads_save_dir = './test/lfads/output1'
+    FLAGS.lfads_save_dir = './test/legacy/lfads/original/output1'
     FLAGS.co_dim = 1
     FLAGS.factors_dim = 20
     FLAGS.output_dist = 'gaussian'
@@ -26,12 +26,12 @@ def test_lfads_chaotic_rnn_input_pulses_gaussian_noise():
 
     main(None)
 
-    shutil.rmtree('./test/lfads/output1')
+    shutil.rmtree('./test/legacy/lfads/original/output1')
 
 
 def test_lfads_inner():
     try:
-        shutil.rmtree('./test/lfads/output2')
+        shutil.rmtree('./test/legacy/lfads/original/output2')
     except FileNotFoundError as e:
         pass
 
@@ -98,7 +98,7 @@ def test_lfads_inner():
         'learning_rate_init': 0.01,
         'learning_rate_n_to_compare': 1,
         'learning_rate_stop': 0.01,
-        'lfads_save_dir': './test/lfads/output2',
+        'lfads_save_dir': './test/legacy/lfads/original/output2',
         'max_ckpt_to_keep': 5,
         'max_ckpt_to_keep_lve': 5,
         'max_grad_norm': 200.0,
@@ -135,4 +135,4 @@ def test_lfads_inner():
         model = build_model(hps, kind="train", datasets=datasets)
         model.train_model(datasets)
 
-    shutil.rmtree('./test/lfads/output2')
+    shutil.rmtree('./test/legacy/lfads/original/output2')
