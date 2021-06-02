@@ -29,7 +29,7 @@ import numpy as onp  # original CPU-backed NumPy
 import os
 import time
 
-import integrator_rnn_tutorial.utils as utils
+import latentneural.legacy.lfads.tutorial.integrator_rnn.utils as utils
 
 MAX_SEED_INT = 10000000
 

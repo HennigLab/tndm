@@ -22,7 +22,7 @@ import jax.numpy as np
 from jax import grad, jit, vmap
 from jax import random
 
-import lfads_tutorial.utils as utils
+import latentneural.legacy.lfads.tutorial.utils as utils
 
 def poisson_log_likelihood(x, log_rate):
   """Compute the log likelihood under Poisson distribution

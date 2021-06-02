@@ -15,7 +15,7 @@
 # ==============================================================================
 import numpy as np
 import tensorflow as tf
-from lfads.utils import linear, log_sum_exp
+from latentneural.legacy.lfads.original.utils import linear, log_sum_exp
 
 class Poisson(object):
   """Poisson distributon

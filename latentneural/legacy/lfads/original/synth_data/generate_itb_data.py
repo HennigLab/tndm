@@ -20,10 +20,10 @@ import numpy as np
 import os
 import tensorflow as tf
 
-from lfads.utils import write_datasets
-from lfads.synth_data.synthetic_data_utils import normalize_rates
-from lfads.synth_data.synthetic_data_utils import get_train_n_valid_inds, nparray_and_transpose
-from lfads.synth_data.synthetic_data_utils import spikify_data, split_list_by_inds
+from latentneural.legacy.lfads.original.utils import write_datasets
+from latentneural.legacy.lfads.original.synth_data.synthetic_data_utils import normalize_rates
+from latentneural.legacy.lfads.original.synth_data.synthetic_data_utils import get_train_n_valid_inds, nparray_and_transpose
+from latentneural.legacy.lfads.original.synth_data.synthetic_data_utils import spikify_data, split_list_by_inds
 
 DATA_DIR = "rnn_synth_data_v1.0"
 

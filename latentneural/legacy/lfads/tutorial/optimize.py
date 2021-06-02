@@ -29,8 +29,8 @@ import matplotlib.pyplot as plt
 import numpy as onp  # original CPU-backed NumPy
 import sklearn
 
-import lfads_tutorial.lfads as lfads
-import lfads_tutorial.utils as utils
+import latentneural.legacy.lfads.tutorial.lfads as lfads
+import latentneural.legacy.lfads.tutorial.utils as utils
 
 import time
 

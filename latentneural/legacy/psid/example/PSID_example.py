@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 from matplotlib import patches
 
 import psid
-from psid.evaluation import evalPrediction
-from psid.MatHelper import loadmat
+from latentneural.legacy.psid.evaluation import evalPrediction
+from latentneural.legacy.psid.MatHelper import loadmat
 
 def main():
     sample_model_path = os.path.join(os.path.dirname(psid.__file__), 'example', 'sample_model.mat')

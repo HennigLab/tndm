@@ -1,7 +1,8 @@
 # msc-project
 MSc Project
 
-Remember in ```.venv/bin/activate```:
+If needed:
 ```
-export XLA_FLAGS="--xla_gpu_cuda_data_dir=/home/alessandrofacchin/xla"
+pip uninstall h5py -y
+pip install h5py
 ```

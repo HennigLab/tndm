@@ -1,4 +1,4 @@
-from lorenz import LorenzGenerator
+from latentneural.lorenz import LorenzGenerator
 import numpy as np
 
 

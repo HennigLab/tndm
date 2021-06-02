@@ -20,11 +20,11 @@ import numpy as np
 import os
 import tensorflow as tf         # used for flags here
 
-from lfads.utils import write_datasets
-from lfads.synth_data.synthetic_data_utils import add_alignment_projections, generate_data
-from lfads.synth_data.synthetic_data_utils import generate_rnn, get_train_n_valid_inds
-from lfads.synth_data.synthetic_data_utils import nparray_and_transpose
-from lfads.synth_data.synthetic_data_utils import spikify_data, gaussify_data, split_list_by_inds
+from latentneural.legacy.lfads.original.utils import write_datasets
+from latentneural.legacy.lfads.original.synth_data.synthetic_data_utils import add_alignment_projections, generate_data
+from latentneural.legacy.lfads.original.synth_data.synthetic_data_utils import generate_rnn, get_train_n_valid_inds
+from latentneural.legacy.lfads.original.synth_data.synthetic_data_utils import nparray_and_transpose
+from latentneural.legacy.lfads.original.synth_data.synthetic_data_utils import spikify_data, gaussify_data, split_list_by_inds
 # import matplotlib
 # import matplotlib.pyplot as plt
 import scipy.signal

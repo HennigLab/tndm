@@ -129,10 +129,10 @@ dmypy.json
 .pyre/
 
 # Generated data & trained models
-lfads/synth_data/generated/
-lfads/synth_data/trained_itb/
-
 .DS_Store
 .vscode/
-lfads/synth_data/output/
+latentneural/legacy/lfads/original/synth_data/output/
+latentneural/legacy/lfads/original/synth_data/generated/
 notebooks/lfads_jax_tutorial/generated/
+notebooks/vae_quickstart/
+notebooks/lfads_jax_tutorial/

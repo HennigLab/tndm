@@ -65,15 +65,15 @@ from __future__ import print_function
 import numpy as np
 import os
 import tensorflow as tf
-from lfads.distributions import LearnableDiagonalGaussian, DiagonalGaussianFromInput
-from lfads.distributions import diag_gaussian_log_likelihood
-from lfads.distributions import KLCost_GaussianGaussian, Poisson
-from lfads.distributions import LearnableAutoRegressive1Prior
-from lfads.distributions import KLCost_GaussianGaussianProcessSampled
+from latentneural.legacy.lfads.original.distributions import LearnableDiagonalGaussian, DiagonalGaussianFromInput
+from latentneural.legacy.lfads.original.distributions import diag_gaussian_log_likelihood
+from latentneural.legacy.lfads.original.distributions import KLCost_GaussianGaussian, Poisson
+from latentneural.legacy.lfads.original.distributions import LearnableAutoRegressive1Prior
+from latentneural.legacy.lfads.original.distributions import KLCost_GaussianGaussianProcessSampled
 
-from lfads.utils import init_linear, linear, list_t_bxn_to_tensor_bxtxn, write_data
-from lfads.utils import log_sum_exp, flatten
-from lfads.plot_lfads import plot_lfads
+from latentneural.legacy.lfads.original.utils import init_linear, linear, list_t_bxn_to_tensor_bxtxn, write_data
+from latentneural.legacy.lfads.original.utils import log_sum_exp, flatten
+from latentneural.legacy.lfads.original.plot_lfads import plot_lfads
 
 
 tf.compat.v1.disable_eager_execution() # this way, line 317 runs

@@ -20,7 +20,7 @@ import jax.numpy as np
 from jax import jit, vmap
 from jax import random
 import matplotlib.pyplot as plt
-import integrator_rnn_tutorial.utils as utils
+import latentneural.legacy.lfads.tutorial.integrator_rnn.utils as utils
 
 
 def build_input_and_target_pure_integration(input_params, key):

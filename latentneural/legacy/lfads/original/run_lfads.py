@@ -17,12 +17,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from lfads.lfads import LFADS
+from latentneural.legacy.lfads.original.lfads import LFADS
 import numpy as np
 import os
 import tensorflow as tf
 import re
-import lfads.utils as utils
+import latentneural.legacy.lfads.original.utils as utils
 import sys
 MAX_INT = sys.maxsize
 

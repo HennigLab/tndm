@@ -23,8 +23,8 @@ import jax.numpy as np
 from jax import jit, lax, random, vmap
 from jax.experimental import optimizers
 
-import lfads_tutorial.distributions as dists
-import lfads_tutorial.utils as utils
+import latentneural.legacy.lfads.tutorial.distributions as dists
+import latentneural.legacy.lfads.tutorial.utils as utils
 
 
 def sigmoid(x):

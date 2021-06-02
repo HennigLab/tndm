@@ -5,9 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import patches
 
-import psid
-from psid.evaluation import evalPrediction
-from psid.MatHelper import loadmat
+from latentneural.legacy import psid
+from latentneural.legacy.psid.evaluation import evalPrediction
+from latentneural.legacy.psid.MatHelper import loadmat
 
 
 @pytest.fixture(scope='module')

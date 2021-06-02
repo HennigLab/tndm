@@ -1,0 +1,25 @@
+name: latentneural
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.8
+  - h5py
+  - imageio
+  - ipykernel
+  - jupyter
+  - matplotlib
+  - numpy<1.20
+  - scikit-learn>=0.24.*
+  - scipy
+  - tensorflow>=2.*
+  - tensorflow-gpu
+  - tensorflow-probability
+  - pytest
+  - pip=20.2.*
+  - pip:
+    - --requirement requirements.txt
+variables:
+  KMP_DUPLICATE_LIB_OK: True
+  XLA_FLAGS: "--xla_gpu_cuda_data_dir=/home/alessandrofacchin/xla"
+  

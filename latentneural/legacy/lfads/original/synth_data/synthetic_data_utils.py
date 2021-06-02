@@ -19,7 +19,7 @@ import h5py
 import numpy as np
 import os
 
-from lfads.utils import write_datasets
+from latentneural.legacy.lfads.original.utils import write_datasets
 # import matplotlib
 # import matplotlib.pyplot as plt
 import scipy.signal

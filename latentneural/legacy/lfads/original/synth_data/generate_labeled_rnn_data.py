@@ -19,12 +19,12 @@ import os
 import h5py
 import numpy as np
 
-from lfads.synth_data.synthetic_data_utils import generate_data, generate_rnn
-from lfads.synth_data.synthetic_data_utils import get_train_n_valid_inds
-from lfads.synth_data.synthetic_data_utils import nparray_and_transpose
-from lfads.synth_data.synthetic_data_utils import spikify_data, split_list_by_inds
+from latentneural.legacy.lfads.original.synth_data.synthetic_data_utils import generate_data, generate_rnn
+from latentneural.legacy.lfads.original.synth_data.synthetic_data_utils import get_train_n_valid_inds
+from latentneural.legacy.lfads.original.synth_data.synthetic_data_utils import nparray_and_transpose
+from latentneural.legacy.lfads.original.synth_data.synthetic_data_utils import spikify_data, split_list_by_inds
 import tensorflow as tf
-from lfads.utils import write_datasets
+from latentneural.legacy.lfads.original.utils import write_datasets
 
 DATA_DIR = "rnn_synth_data_v1.0"
 

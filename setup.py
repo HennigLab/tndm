@@ -9,8 +9,8 @@ here = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(here, 'README.md'), "r") as f:
     long_description = f.read()
 
-with open(os.path.join(here, 'requirements.txt'), "r") as f:
-    install_requires = f.readlines()
+# with open(os.path.join(here, 'requirements.txt'), "r") as f:
+#     install_requires = f.readlines()
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
@@ -41,7 +41,7 @@ setup(
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
 
-    packages=["lfads", "psid", "lorenz"],
+    packages=["latentneural"],
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
@@ -76,8 +76,8 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=install_requires,  # Optional
-
+    # install_requires=install_requires,  # Optional
+    
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
     # syntax, for example:
