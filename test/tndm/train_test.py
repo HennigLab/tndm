@@ -1,10 +1,12 @@
 import tensorflow as tf
 import numpy as np
+import pytest
 
 from latentneural import TNDM
 from latentneural.tndm.train import train_step, train_model
 
    
+@pytest.mark.unit
 def test_train_step():
     neural_data = np.random.binomial(1, 0.5, (10, 100, 50)).astype(float) # trials X time X neurons
     behaviour_data = np.exp(np.random.randn(10, 100, 2)) # trials X time X behaviour
@@ -16,6 +18,8 @@ def test_train_step():
 
     train_step(model, neural_data, behaviour_data, optimizer)
 
+@pytest.mark.regression
+@pytest.mark.slow
 def test_training_regression():
     neural_data_train = np.random.binomial(1, 0.5, (10, 100, 50)).astype(float) # test_trials X time X neurons
     behaviour_data_train = np.exp(np.random.randn(10, 100, 2)) # test_trials X time X behaviour

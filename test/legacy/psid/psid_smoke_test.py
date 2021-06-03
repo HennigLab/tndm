@@ -44,6 +44,8 @@ def tutorial_input_data():
     return (data, trueSys, allYData, allZData, yTrain, yTest, zTrain, zTest)
 
 
+@pytest.mark.smoke
+@pytest.mark.legacy
 def test_tutorial_with_generated_data(tutorial_input_data):
     (data, trueSys, allYData, allZData, yTrain, yTest, zTrain, zTest) = tutorial_input_data
 
@@ -106,6 +108,7 @@ def test_tutorial_with_generated_data(tutorial_input_data):
     ax.legend(bbox_to_anchor=(1.04,0.5), loc="center left", borderaxespad=0)
     # plt.show()
 
+@pytest.mark.smoke
 def test_tutorial_with_trial_data(tutorial_input_data):
     (data, trueSys, allYData, allZData, yTrain, yTest, zTrain, zTest) = tutorial_input_data
 

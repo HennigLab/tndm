@@ -1,0 +1,51 @@
+name: Python Tests
+
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    name: 'Run Tests'
+    runs-on: ubuntu-latest
+    env:
+      OS: ubuntu-latest
+      PYTHON: '3.8'
+      CPU_ONLY: 'TRUE'
+    steps:
+    - uses: actions/checkout@master
+    - name: Setup Python
+      uses: actions/setup-python@master
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: |
+        # $CONDA is an environment variable pointing to the root of the miniconda directory
+        $CONDA/bin/conda env update --file environment.yml --name latentneural
+        $CONDA/bin/conda init bash
+    - name: H5PY Fix
+      run: |
+        # Workaround for h5py installation
+        source $CONDA/etc/profile.d/conda.sh
+        conda activate latentneural
+        pip uninstall h5py -y
+        pip install h5py
+    - name: Lint with mypy
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        source $CONDA/etc/profile.d/conda.sh
+        conda activate latentneural
+        mypy --ignore-missing-imports --follow-imports=silent --show-column-numbers --module latentneural
+    - name: Test with pytest
+      run: |
+        source $CONDA/etc/profile.d/conda.sh
+        conda activate latentneural
+        pytest -v -m "not slow" --cov=latentneural --cov-report=xml --cov-config=.coveragerc
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage.xml,./.coverage
+        directory: ./
+        env_vars: OS,PYTHON
+        name: codecov-umbrella
+        fail_ci_if_error: true
+        verbose: true

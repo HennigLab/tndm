@@ -1,10 +1,15 @@
-from latentneural.legacy.lfads.original.run_lfads import main, FLAGS, build_model
-from latentneural.lorenz.utils import struct
 import numpy as np
 import tensorflow as tf
 import shutil
+import pytest
+
+from latentneural.legacy.lfads.original.run_lfads import main, FLAGS, build_model
+from latentneural.lorenz.utils import struct
 
 
+@pytest.mark.smoke
+@pytest.mark.legacy
+@pytest.mark.slow
 def test_lfads_chaotic_rnn_input_pulses_gaussian_noise():
     try:
         shutil.rmtree('./test/legacy/lfads/original/output1')
@@ -28,7 +33,9 @@ def test_lfads_chaotic_rnn_input_pulses_gaussian_noise():
 
     shutil.rmtree('./test/legacy/lfads/original/output1')
 
-
+@pytest.mark.smoke
+@pytest.mark.legacy
+@pytest.mark.slow
 def test_lfads_inner():
     try:
         shutil.rmtree('./test/legacy/lfads/original/output2')

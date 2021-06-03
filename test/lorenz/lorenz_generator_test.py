@@ -1,7 +1,12 @@
-from latentneural.lorenz import LorenzGenerator
 import numpy as np
+import pytest
 
+from latentneural.lorenz import initial_conditions
+from latentneural.lorenz.behaviour_overlays.sine_overlay import sine_overlay
+from latentneural.lorenz.initial_conditions import uniform
+from latentneural.lorenz import LorenzGenerator
 
+@pytest.mark.unit
 def test_lorenz_generate_latent():
     g = LorenzGenerator()
     t, z = g.generate_latent()
@@ -11,6 +16,7 @@ def test_lorenz_generate_latent():
     np.testing.assert_almost_equal(t[0], 0)
     np.testing.assert_almost_equal(t[-1], 0.996)
 
+@pytest.mark.unit
 def test_lorenz_generate_rates():
     g = LorenzGenerator()
     t, f, w, z = g.generate_rates(n=5, trials=2)
@@ -22,6 +28,7 @@ def test_lorenz_generate_rates():
     np.testing.assert_almost_equal(t[0], 0)
     np.testing.assert_almost_equal(t[-1], 0.996)
 
+@pytest.mark.unit
 def test_lorenz_generate_spikes():
     g = LorenzGenerator()
     t, s, f, w, z = g.generate_spikes(n=2, trials=5, conditions=10)
@@ -34,6 +41,7 @@ def test_lorenz_generate_spikes():
     np.testing.assert_almost_equal(t[0], 0)
     np.testing.assert_almost_equal(t[-1], 0.996)
 
+@pytest.mark.unit
 def test_lorenz_generate_spikes_and_behaviour():
     g = LorenzGenerator()
     t, b, s, f, bw, w, z = g.generate_spikes_and_behaviour(n=2, trials=5, conditions=10, l=1, b=2, y=6)
@@ -48,9 +56,55 @@ def test_lorenz_generate_spikes_and_behaviour():
     np.testing.assert_almost_equal(t[0], 0)
     np.testing.assert_almost_equal(t[-1], 0.996)
 
+@pytest.mark.unit
 def test_lorenz_generate_spikes_and_behaviour_ones():
     g = LorenzGenerator()
     t, b, s, f, bw, w, z = g.generate_spikes_and_behaviour(n=1, trials=1, conditions=1, l=1, b=1, y=1)
+
+    np.testing.assert_equal(t.shape, (np.ceil(1/0.006),))
+    np.testing.assert_equal(b.shape, (1, 1, np.ceil(1/0.006), 1))
+    np.testing.assert_equal(s.shape, (1, 1, np.ceil(1/0.006), 1))
+    np.testing.assert_equal(f.shape, (1, 1, np.ceil(1/0.006), 1))
+    np.testing.assert_equal(bw.shape, (1, 1, 1))
+    np.testing.assert_equal(w.shape, (1, 1, 1))
+    np.testing.assert_equal(z.shape, (1, 1, np.ceil(1/0.006), 3))
+    np.testing.assert_almost_equal(t[0], 0)
+    np.testing.assert_almost_equal(t[-1], 0.996)
+
+@pytest.mark.unit
+def test_lorenz_generate_spikes_with_warmup():
+    g = LorenzGenerator()
+    t, b, s, f, bw, w, z = g.generate_spikes_and_behaviour(n=1, trials=1, conditions=1, l=1, b=1, y=1, warmup=1000)
+
+    np.testing.assert_equal(t.shape, (np.ceil(1/0.006),))
+    np.testing.assert_equal(b.shape, (1, 1, np.ceil(1/0.006), 1))
+    np.testing.assert_equal(s.shape, (1, 1, np.ceil(1/0.006), 1))
+    np.testing.assert_equal(f.shape, (1, 1, np.ceil(1/0.006), 1))
+    np.testing.assert_equal(bw.shape, (1, 1, 1))
+    np.testing.assert_equal(w.shape, (1, 1, 1))
+    np.testing.assert_equal(z.shape, (1, 1, np.ceil(1/0.006), 3))
+    np.testing.assert_almost_equal(t[0], 0)
+    np.testing.assert_almost_equal(t[-1], 0.996)
+
+@pytest.mark.unit
+def test_lorenz_generate_spikes_with_overlay():
+    g = LorenzGenerator()
+    t, b, s, f, bw, w, z = g.generate_spikes_and_behaviour(n=1, trials=1, conditions=1, l=1, b=1, y=1, warmup=1000, behaviour_overlay=sine_overlay)
+
+    np.testing.assert_equal(t.shape, (np.ceil(1/0.006),))
+    np.testing.assert_equal(b.shape, (1, 1, np.ceil(1/0.006), 1))
+    np.testing.assert_equal(s.shape, (1, 1, np.ceil(1/0.006), 1))
+    np.testing.assert_equal(f.shape, (1, 1, np.ceil(1/0.006), 1))
+    np.testing.assert_equal(bw.shape, (1, 1, 1))
+    np.testing.assert_equal(w.shape, (1, 1, 1))
+    np.testing.assert_equal(z.shape, (1, 1, np.ceil(1/0.006), 3))
+    np.testing.assert_almost_equal(t[0], 0)
+    np.testing.assert_almost_equal(t[-1], 0.996)
+
+@pytest.mark.unit
+def test_lorenz_generate_spikes_with_overlay():
+    g = LorenzGenerator()
+    t, b, s, f, bw, w, z = g.generate_spikes_and_behaviour(n=1, trials=1, conditions=1, l=1, b=1, y=1, initial_conditions=uniform(low=-80, high=80))
 
     np.testing.assert_equal(t.shape, (np.ceil(1/0.006),))
     np.testing.assert_equal(b.shape, (1, 1, np.ceil(1/0.006), 1))
