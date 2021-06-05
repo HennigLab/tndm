@@ -1,4 +1,4 @@
-name: latentneural
+name: latentneural-cpu
 channels:
   - defaults
   - conda-forge
@@ -22,7 +22,7 @@ dependencies:
   - plotly
   - pytest
   - pip:
-    - --requirement requirements.txt
+    - --requirement requirements.cpu.txt
 variables:
   KMP_DUPLICATE_LIB_OK: True
   XLA_FLAGS: "--xla_gpu_cuda_data_dir=/home/alessandrofacchin/xla"
