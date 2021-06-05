@@ -2,9 +2,8 @@ import numpy as np
 import pytest
 
 from latentneural.lorenz import initial_conditions
-from latentneural.lorenz.behaviour_overlays.sine_overlay import sine_overlay
 from latentneural.lorenz.initial_conditions import uniform
-from latentneural.lorenz import LorenzGenerator
+from latentneural.lorenz import LorenzGenerator, bo
 
 @pytest.mark.unit
 def test_lorenz_generate_latent():
@@ -89,7 +88,7 @@ def test_lorenz_generate_spikes_with_warmup():
 @pytest.mark.unit
 def test_lorenz_generate_spikes_with_overlay():
     g = LorenzGenerator()
-    t, b, s, f, bw, w, z = g.generate_spikes_and_behaviour(n=1, trials=1, conditions=1, l=1, b=1, y=1, warmup=1000, behaviour_overlay=sine_overlay)
+    t, b, s, f, bw, w, z = g.generate_spikes_and_behaviour(n=1, trials=1, conditions=1, l=1, b=1, y=1, warmup=1000, behaviour_overlay=bo.sine_overlay)
 
     np.testing.assert_equal(t.shape, (np.ceil(1/0.006),))
     np.testing.assert_equal(b.shape, (1, 1, np.ceil(1/0.006), 1))
@@ -102,9 +101,26 @@ def test_lorenz_generate_spikes_with_overlay():
     np.testing.assert_almost_equal(t[-1], 0.996)
 
 @pytest.mark.unit
-def test_lorenz_generate_spikes_with_overlay():
+def test_lorenz_generate_spikes_with_initial_condition():
     g = LorenzGenerator()
     t, b, s, f, bw, w, z = g.generate_spikes_and_behaviour(n=1, trials=1, conditions=1, l=1, b=1, y=1, initial_conditions=uniform(low=-80, high=80))
+
+    np.testing.assert_equal(t.shape, (np.ceil(1/0.006),))
+    np.testing.assert_equal(b.shape, (1, 1, np.ceil(1/0.006), 1))
+    np.testing.assert_equal(s.shape, (1, 1, np.ceil(1/0.006), 1))
+    np.testing.assert_equal(f.shape, (1, 1, np.ceil(1/0.006), 1))
+    np.testing.assert_equal(bw.shape, (1, 1, 1))
+    np.testing.assert_equal(w.shape, (1, 1, 1))
+    np.testing.assert_equal(z.shape, (1, 1, np.ceil(1/0.006), 3))
+    np.testing.assert_almost_equal(t[0], 0)
+    np.testing.assert_almost_equal(t[-1], 0.996)
+
+
+@pytest.mark.unit
+def test_lorenz_generate_spikes_with_seed():
+    g = LorenzGenerator()
+    t, b, s, f, bw, w, z = g.generate_spikes_and_behaviour(n=1, trials=1, conditions=1, l=1, b=1, y=1, 
+        initial_conditions=uniform(low=-80, high=80), seed=1234, behaviour_overlay=bo.sine_overlay)
 
     np.testing.assert_equal(t.shape, (np.ceil(1/0.006),))
     np.testing.assert_equal(b.shape, (1, 1, np.ceil(1/0.006), 1))

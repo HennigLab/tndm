@@ -3,7 +3,6 @@ from typing import Dict, Any
 
 from latentneural.utils import ArgsParser
 from .sampling import Sampling
-from .crop import Crop
 
 
 class TNDM(tf.keras.Model):
@@ -56,7 +55,7 @@ class TNDM(tf.keras.Model):
     self.neural_dense = tf.keras.layers.Dense(neural_space, name="NeuralDense", **neural_dense_args)
     
 
-  def call(self, inputs, training: bool=False):
+  def call(self, inputs, training: bool=True):
     encoded = self.encoder(inputs, training=training)
 
     r_mean = self.dense_relevant_mean(encoded)

@@ -127,11 +127,6 @@ class LorenzGenerator(object):
         z: np.ndarray = np.asarray(z_list)
         z = self.normalise_latent(z)
 
-        # Cast to type and size
-        if z.ndim < 3:
-            z = np.atleast_3d(z)
-            z = np.rollaxis(z, axis=-1)
-
         ntrial, ntime, _ = z.shape
         weights: np.ndarray = np.random.uniform(1, 2, (l, n)) * np.sign(np.random.randn(l, n)) # As in https://github.com/colehurwitz/plfads/blob/bcf02b3d94fb1204f72836958acb21d60af96a15/generate_lorenz_data.py#L111
         nchannel = weights.shape[1]
@@ -272,7 +267,7 @@ class LorenzGenerator(object):
             behavioural_weights: np.ndarray = np.random.normal(0, 5, (b, y)) # As in https://github.com/colehurwitz/plfads/blob/bcf02b3d94fb1204f72836958acb21d60af96a15/generate_lorenz_data.py#L135
             behaviours_normal = z_tmp[:,:,-b:] @ behavioural_weights
 
-            if behaviour_overlay:
+            if behaviour_overlay is not None:
                 overlay = behaviour_overlay(step=step, start=start, stop=stop) # add sine overlay as in https://github.com/colehurwitz/plfads/blob/bcf02b3d94fb1204f72836958acb21d60af96a15/generate_lorenz_data.py#L139
                 behaviours_noiseless = behaviours_normal + overlay[None, :, None]
             else:

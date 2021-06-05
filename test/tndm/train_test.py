@@ -18,6 +18,27 @@ def test_train_step():
 
     train_step(model, neural_data, behaviour_data, optimizer)
 
+@pytest.mark.unit
+def test_train_model_quick():
+    neural_data_train = np.random.binomial(1, 0.5, (10, 100, 50)).astype(float) # test_trials X time X neurons
+    behaviour_data_train = np.exp(np.random.randn(10, 100, 2)) # test_trials X time X behaviour
+    neural_data_val = np.random.binomial(1, 0.5, (2, 100, 50)).astype(float) # val_trials X time X neurons
+    behaviour_data_val = np.exp(np.random.randn(2, 100, 2)) # val_trials X time X behaviour
+    
+    model = TNDM(neural_space=50, behaviour_space=2)
+    model.build(input_shape=[None, 100, 50])
+
+    optimizer = tf.keras.optimizers.Adam(1e-3)
+
+    train_model(
+        model,
+        optimizer,
+        epochs=1,
+        train_dataset=[(neural_data_train, behaviour_data_train)],
+        val_dataset=[(neural_data_val, behaviour_data_val)],
+        coefficients=[5,1,1,1]
+    )
+
 @pytest.mark.regression
 @pytest.mark.slow
 def test_training_regression():

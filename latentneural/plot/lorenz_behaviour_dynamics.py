@@ -4,7 +4,7 @@ import plotly.express as px
 
 
 def lorenz_behaviour_dynamics(condition: int, trial: int, time: np.ndarray, behaviour_w: np.ndarray, latent: np.ndarray, behaviour: np.ndarray):
-    noisless = latent[condition,trial,:,-behaviour_w.shape[1]:] @ behaviour_w[condition]
+    noisless = latent[condition,trial,:,-behaviour_w.shape[1]:] @ behaviour_w[condition,:,:]
     fig = go.Figure()
 
     for d in range(behaviour_w.shape[2]):
