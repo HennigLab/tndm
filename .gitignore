@@ -137,3 +137,5 @@ notebooks/lfads_jax_tutorial/generated/
 notebooks/vae_quickstart/
 notebooks/lfads_jax_tutorial/
 test/legacy/lfads/original/output*
+latentneural/data/storage/**/metadata.json
+latentneural/data/storage/**/dataset.h5
