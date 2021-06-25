@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def trunc_exp(x: np.ndarray, bound: float=10):
+def trunc_exp(x: np.ndarray, bound: float = 10):
     """Truncated exponential
 
     From: https://github.com/catniplab/vlgp
@@ -15,14 +15,15 @@ def trunc_exp(x: np.ndarray, bound: float=10):
     """
     return np.exp(np.minimum(x, bound))
 
+
 class struct(dict, object):
-  """Helper class allowing us to access hps dictionary more easily."""
+    """Helper class allowing us to access hps dictionary more easily."""
 
-  def __getattr__(self, key):
-    if key in self:
-      return self[key]
-    else:
-      assert False, ("%s does not exist." % key)
+    def __getattr__(self, key):
+        if key in self:
+            return self[key]
+        else:
+            assert False, ("%s does not exist." % key)
 
-  def __setattr__(self, key, value):
-    self[key] = value
+    def __setattr__(self, key, value):
+        self[key] = value

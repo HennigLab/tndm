@@ -131,14 +131,16 @@ dmypy.json
 # Generated data & trained models
 .DS_Store
 .vscode/
-latentneural/legacy/lfads/original/synth_data/output/
-latentneural/legacy/lfads/original/synth_data/generated/
 notebooks/lfads_jax_tutorial/generated/
 notebooks/vae_quickstart/
 notebooks/lfads_jax_tutorial/
-test/legacy/lfads/original/output*
 latentneural/data/storage/**/metadata.json
 latentneural/data/storage/**/dataset.h5
 latentneural/data/storage/**/results
 latentneural/data/storage/**/results.zip
 latentneural/data/storage/lorenz/20210610T215300/results_new_lfads/*
+latentneural/legacy
+latentneural/data/storage/**/*.v2
+latentneural/data/storage/**/*.profile-empty
+latentneural/data/storage/**/plugins/
+test/mocks/runtime_test_outputs/

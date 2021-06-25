@@ -2,7 +2,8 @@ import numpy as np
 from typing import Tuple, Callable
 
 
-def uniform(low: float=-1, high: float=1) -> Callable[..., Tuple[float, float, float]]:
+def uniform(low: float = -1,
+            high: float = 1) -> Callable[..., Tuple[float, float, float]]:
     """Uniform initial conditions
 
     Args:
@@ -13,9 +14,9 @@ def uniform(low: float=-1, high: float=1) -> Callable[..., Tuple[float, float, f
     """
     def callable() -> Tuple[float, float, float]:
         return (
-        np.random.uniform(low=low, high=high),
-        np.random.uniform(low=low, high=high),
-        np.random.uniform(low=low, high=high),
+            np.random.uniform(low=low, high=high),
+            np.random.uniform(low=low, high=high),
+            np.random.uniform(low=low, high=high),
         )
 
     return callable

@@ -1,7 +1,8 @@
 from typing import Callable, Tuple
 
 
-def constant(x0: float=0, y0: float=1, z0: float=1.05) -> Callable[..., Tuple[float, float, float]]:
+def constant(x0: float = 0, y0: float = 1,
+             z0: float = 1.05) -> Callable[..., Tuple[float, float, float]]:
     """Constant initial conditions
 
     Args:
@@ -12,5 +13,5 @@ def constant(x0: float=0, y0: float=1, z0: float=1.05) -> Callable[..., Tuple[fl
         Callable[..., Tuple(float, float, float)]: A generator for the (x,y,z) initial contidions.
     """
     def callable() -> Tuple[float, float, float]:
-        return (x0, y0, z0) 
+        return (x0, y0, z0)
     return callable

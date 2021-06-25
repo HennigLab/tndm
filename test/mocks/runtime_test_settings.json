@@ -1,0 +1,134 @@
+{
+    "model": {
+        "type": "tndm",
+        "settings": {
+            "relevant_factors": 2,
+            "irrelevant_factors": 1,
+            "encoded_space": 64,
+            "max_grad_norm": 200,
+            "timestep": 0.01,
+            "default_layer_settings": {
+                "kernel_initializer": {
+                    "type": "variance_scaling",
+                    "arguments": {
+                        "scale": 1.0,
+                        "mode": "fan_in",
+                        "distribution": "normal"
+                    }
+                },
+                "kernel_regularizer": {
+                    "type": "l2",
+                    "arguments": {
+                        "l": 0.1
+                    }
+                }
+            },
+            "layers": {
+                "encoder": {
+                    "dropout": 0.05,
+                    "var_max": 0.1,
+                    "var_min": 0.1
+                },
+                "relevant_decoder": {
+                    "kernel_initializer": {
+                        "type": "variance_scaling",
+                        "arguments": {
+                            "scale": 1.0,
+                            "mode": "fan_in",
+                            "distribution": "normal"
+                        }
+                    },
+                    "kernel_regularizer": {
+                        "type": "l2",
+                        "arguments": {
+                            "l": 1
+                        }
+                    },
+                    "recurrent_regularizer": {
+                        "type": "l2",
+                        "arguments": {
+                            "l": 1
+                        }
+                    },
+                    "original_cell": false
+                },
+                "irrelevant_decoder": {
+                    "kernel_initializer": {
+                        "type": "variance_scaling",
+                        "arguments": {
+                            "scale": 1.0,
+                            "mode": "fan_in",
+                            "distribution": "normal"
+                        }
+                    },
+                    "kernel_regularizer": {
+                        "type": "l2",
+                        "arguments": {
+                            "l": 1
+                        }
+                    },
+                    "recurrent_regularizer": {
+                        "type": "l2",
+                        "arguments": {
+                            "l": 1
+                        }
+                    },
+                    "original_cell": false
+                },
+                "behavioural_dense": {
+                    "behaviour_sigma": 1,
+                    "behaviour_type": "synchronous"
+                }
+            }
+        }
+    },
+    "output": {
+        "directory": "test/mocks/runtime_test_outputs",
+        "save_plots": false,
+        "save_settings": true
+    },
+    "data": {
+        "directory": "./latentneural/data/storage/lorenz/20210610T215300",
+        "dataset_filename": "dataset.h5",
+        "metadata_filename": "metadata.json",
+        "neural_keys": {
+            "train": "train_data",
+            "validation": "valid_data",
+            "test": "test_data"
+        },
+        "behavioural_keys": {
+            "train": "train_behaviours",
+            "validation": "valid_behaviours",
+            "test": "test_behaviours"
+        },
+        "latent_keys": {
+            "train": "train_latent",
+            "validation": "valid_latent",
+            "test": "test_latent"
+        }
+    },
+    "runtime": {
+        "optimizer": {
+            "type": "adam",
+            "arguments": {
+                "beta_1": 0.9, 
+                "beta_2": 0.999,
+                "epsilon": 1e-01
+            }
+        },
+        "weights": {
+            "initial": [1.0, 1.0, 0.0, 0.0, 0.0],
+            "update_start": [0, 0, 1000, 1000, 0],
+            "update_rate": [0.0, 0.0, 0.0005, 0.0005, 0.0005],
+            "min_weight": [1.0, 1.0, 0.0, 0.0, 0.0]
+        },
+        "learning_rate": {
+            "initial": 1e-2,
+            "factor": 0.95, 
+            "patience": 10, 
+            "min_lr": 1e-5
+        },
+        "epochs": 2,
+        "batch_size": 32
+    }
+}

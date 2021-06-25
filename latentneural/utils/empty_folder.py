@@ -1,7 +1,6 @@
 import os
 import shutil
 
-from .logging import logger
 
 
 def empty_folder(folder: str):
