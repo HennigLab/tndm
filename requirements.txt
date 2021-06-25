@@ -5,7 +5,10 @@ google-auth==1.30.1
 google-pasta==0.2.0
 jax==0.1.75
 jaxlib==0.1.52+cuda110
+gast==0.3.3
 pytest-codecov
+tensorboard
 tensorflow-gpu
+pytest-ordering
 git+https://github.com/tensorflow/docs
 -e .

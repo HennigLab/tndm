@@ -139,3 +139,6 @@ notebooks/lfads_jax_tutorial/
 test/legacy/lfads/original/output*
 latentneural/data/storage/**/metadata.json
 latentneural/data/storage/**/dataset.h5
+latentneural/data/storage/**/results
+latentneural/data/storage/**/results.zip
+latentneural/data/storage/lorenz/20210610T215300/results_new_lfads/*

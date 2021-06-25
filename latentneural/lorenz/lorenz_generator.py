@@ -206,7 +206,7 @@ class LorenzGenerator(object):
 
     def generate_spikes_and_behaviour(self, n: int=30, base: float=5, initial_conditions: Callable[..., Tuple[float, float, float]]=constant(),
     l: int=3, b: int=3, y: int=1, start: float=0, stop: float=1, step: float=0.006, warmup: int=0, seed: int=None, 
-    encoding: Callable[[np.ndarray], np.ndarray]=lambda x: stats.poisson.rvs(x).clip(0,1).reshape(x.shape),
+    encoding: Callable[[np.ndarray], np.ndarray]=lambda x: stats.poisson.rvs(x).reshape(x.shape),
     trials: int=1, conditions: int=1, behaviour_overlay: Optional[Callable[..., np.ndarray]]=None) -> \
     Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Generate spikes and behaviour
@@ -230,8 +230,7 @@ class LorenzGenerator(object):
             warmup (int, optional): Steps skipped. Defaults to 0.
             seed (int, optional): if provided, random number seed
             encoding (Callable[[np.ndarray], np.ndarray], optional): function to convert rates into 
-                spike count. Default to Poisson clipped between 1 and 0. It is equivalent to 
-                Bernoulli P(1) = (1 - e^-(lam_t))
+                spike count. Default to Poisson.
             trials (int, optional): number of trials k. Defaults to 1
             conditions (int, optional): number of conditions to try c. Defaults to 1
 

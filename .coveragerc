@@ -6,10 +6,11 @@ omit = *latentneural/legacy*
 [report]
 # Regexes for lines to exclude from consideration
 exclude_lines =
-    # Don't complain if tests don't hit defensive assertion code:
+    # Don't complain if tests don't hit defensive error code:
     raise AssertionError
     raise NotImplementedError
     raise ValueError
+    except KeyboardInterrupt
 
     # Don't complain if non-runnable code isn't run:
     if 0:

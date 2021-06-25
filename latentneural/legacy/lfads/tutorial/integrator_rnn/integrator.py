@@ -61,16 +61,16 @@ def plot_batch(ntimesteps, input_bxtxu, target_bxtxo=None, output_bxtxo=None,
   plt.ylabel('Noise')
   plt.subplot(312)
   if output_bxtxo is not None:
-    plt.plot(output_bxtxo[0:ntoplot,:,0].T);
-    plt.xlim([0, ntimesteps-1]);
+    plt.plot(output_bxtxo[0:ntoplot,:,0].T)
+    plt.xlim([0, ntimesteps-1])
   if target_bxtxo is not None:
-    plt.plot(target_bxtxo[0:ntoplot,:,0].T, '--');
-    plt.xlim([0, ntimesteps-1]);
+    plt.plot(target_bxtxo[0:ntoplot,:,0].T, '--')
+    plt.xlim([0, ntimesteps-1])
     plt.ylabel("Integration")
   if errors_bxtxo is not None:
     plt.subplot(313)
-    plt.plot(errors_bxtxo[0:ntoplot,:,0].T, '--');
-    plt.xlim([0, ntimesteps-1]);
+    plt.plot(errors_bxtxo[0:ntoplot,:,0].T, '--')
+    plt.xlim([0, ntimesteps-1])
     plt.ylabel("|Errors|")
   plt.xlabel('Timesteps')
 

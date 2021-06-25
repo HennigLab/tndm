@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import patches
 
-from latentneural.legacy import psid
+from latentneural.legacy.psid import LSSM, PSID
 from latentneural.legacy.psid.evaluation import evalPrediction
 from latentneural.legacy.psid.MatHelper import loadmat
 
@@ -13,7 +13,7 @@ from latentneural.legacy.psid.MatHelper import loadmat
 @pytest.fixture(scope='module')
 def tutorial_input_data():
     # Load data
-    sample_model_path = os.path.join(os.path.dirname(psid.__file__), 'example', 'sample_model.mat')
+    sample_model_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'sample_model.mat')
                     
     print('Loading example model from {}'.format(sample_model_path))
     data = loadmat(sample_model_path)
@@ -22,12 +22,12 @@ def tutorial_input_data():
     np.random.seed(42) # For exact reproducibility
 
     N = int(2e4)
-    trueSys = psid.LSSM(params=data['trueSys'])
+    trueSys = LSSM(params=data['trueSys'])
     y, x = trueSys.generateRealization(N)
     z = (trueSys.Cz @ x.T).T
 
     # Add some z dynamics that are not encoded in y (i.e. epsilon)
-    epsSys = psid.LSSM(params=data['epsSys'])
+    epsSys = LSSM(params=data['epsSys'])
     eps, _ = epsSys.generateRealization(N)
     z += eps
 
@@ -51,7 +51,7 @@ def test_tutorial_with_generated_data(tutorial_input_data):
 
     ## (Example 1) PSID can be used to dissociate and extract only the 
     # behaviorally relevant latent states (with nx = n1 = 2)
-    idSys1 = psid.PSID(yTrain, zTrain, nx=2, n1=2, i=10)
+    idSys1 = PSID(yTrain, zTrain, nx=2, n1=2, i=10)
 
     # Predict behavior using the learned model
     zTestPred1, yTestPred1, xTestPred1 = idSys1.predict(yTest)
@@ -67,7 +67,7 @@ def test_tutorial_with_generated_data(tutorial_input_data):
 
     ## (Example 2) Optionally, PSID can additionally also learn the 
     # behaviorally irrelevant latent states (with nx = 4, n1 = 2)
-    idSys2 = psid.PSID(yTrain, zTrain, nx=4, n1=2, i=10)
+    idSys2 = PSID(yTrain, zTrain, nx=4, n1=2, i=10)
 
     # In addition to ideal behavior decoding, this model will also have ideal neural self-prediction 
     zTestPred2, yTestPred2, xTestPred2 = idSys2.predict(yTest)
@@ -132,7 +132,7 @@ def test_tutorial_with_trial_data(tutorial_input_data):
     zTrain = [zTrials[ti] for ti in trainInds]
     zTest = [zTrials[ti] for ti in testInds]
 
-    idSys3 = psid.PSID(yTrain, zTrain, nx=2, n1=2, i=10)
+    idSys3 = PSID(yTrain, zTrain, nx=2, n1=2, i=10)
 
     for ti in range(len(yTest)):
         zPredThis, yPredThis, xPredThis = idSys3.predict(yTest[ti])

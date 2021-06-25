@@ -26,4 +26,5 @@ dependencies:
 variables:
   KMP_DUPLICATE_LIB_OK: True
   XLA_FLAGS: "--xla_gpu_cuda_data_dir=/home/alessandrofacchin/xla"
+  CPU_ONLY: "TRUE"
   

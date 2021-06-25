@@ -1,1 +1,0 @@
-{"step": 0.01, "stop": 1, "neurons": 30, "base_rate": 5, "latent_dim": 3, "relevant_dim": 2, "behaviour_dim": 4, "conditions": 1, "trials": 8, "initial_conditions": "<function uniform.<locals>.callable at 0x7fd180050c10>", "selected_condition": 0, "seed": 12345, "train_pct": 0.7, "valid_pct": 0.1, "test_pct": 0.2, "created": "2021-06-04T15:55:02.353242"}

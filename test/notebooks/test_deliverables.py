@@ -5,8 +5,8 @@ import pytest
 from latentneural.utils import upsert_empty_folder, logger, remove_folder
 
 
-@pytest.fixture(scope='function')
-def lorenz_generator_filename():
+@pytest.fixture(scope='module')
+def notebooks_converted():
     test_notebooks_folder = os.path.join('test', 'notebooks', 'deliverables')
     original_notebooks_folder = os.path.join('notebooks', 'deliverables')
 
@@ -20,8 +20,12 @@ def lorenz_generator_filename():
             os.path.join('..', '..', test_notebooks_folder, notebook).replace('.ipynb', '.py'),
             os.path.join(original_notebooks_folder, notebook),
         ))
+    return True
 
-    return os.path.join('.', 'test', 'notebooks', 'deliverables', 'lorenz_generator.py')
+@pytest.fixture(scope='function')
+def lorenz_generator_filename(notebooks_converted):
+    if notebooks_converted:
+        return os.path.join('.', 'test', 'notebooks', 'deliverables', 'lorenz_generator.py')
 
 @pytest.fixture(scope='function', autouse=True)
 def cleanup(request):
