@@ -67,11 +67,11 @@ runtime:
     arguments:
       beta_1: 0.9
       beta_2: 0.999
-      epsilon: 0.1
+      epsilon: 1.0e-02
     type: adam
   weights:
     initial: [1.0, 0.0, 0.0]
-    min_weight: [1.0, 0.0, 0.0]
+    min_weight: [1.0, 0.0005, 0.0005]
     update_rate: [0.0, 0.0005, 0.0005]
     update_start: [0, 1000, 0]
     max_weight: [1.0, 1.0, 1.0]
