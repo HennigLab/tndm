@@ -83,9 +83,7 @@
         }
     },
     "output": {
-        "directory": "test/mocks/runtime_test_outputs",
-        "save_plots": false,
-        "save_settings": true
+        "directory": "test/mocks/runtime_test_outputs"
     },
     "data": {
         "directory": "./latentneural/data/storage/lorenz/20210610T215300",

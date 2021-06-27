@@ -6,7 +6,7 @@ from datetime import datetime
 from copy import deepcopy
 import json
 
-from latentneural.utils import logger
+from latentneural.utils import logger, CustomEncoder
 
 
 class DataManager(object):
@@ -191,7 +191,7 @@ class DataManager(object):
             os.makedirs(dir_name)
         try:
             with open(settings_fname, 'w') as fp:
-                json.dump(obj=settings, fp=fp)
+                json.dump(obj=settings, fp=fp, cls=CustomEncoder)
 
             with h5py.File(data_fname, 'w') as hf:
                 for k, v in dataset.items():

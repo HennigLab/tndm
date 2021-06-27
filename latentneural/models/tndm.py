@@ -1,45 +1,54 @@
+from __future__ import annotations
 import tensorflow as tf
+from copy import deepcopy
 from typing import Dict, Any
 import tensorflow_probability as tfp
 import math as m
 from collections import defaultdict
 
-from latentneural.utils import ArgsParser
+from latentneural.utils import ArgsParser, clean_layer_name
 from latentneural.layers import GaussianSampling, GeneratorGRU, MaskedDense
+from latentneural.losses import gaussian_kldiv_loss, poisson_loglike_loss, regularization_loss, gaussian_loglike_loss
+from .model_loader import ModelLoader
 
 
 tf.config.run_functions_eagerly(True)
 
 
-class TNDM(tf.keras.Model):
+class TNDM(ModelLoader, tf.keras.Model):
 
     _WEIGHTS_NUM = 5
 
     def __init__(self, **kwargs: Dict[str, Any]):
-        super(TNDM, self).__init__()
+        tf.keras.Model.__init__(self)
 
-        self.encoded_space: int = ArgsParser.get_or_default(
-            kwargs, 'encoded_space', 64)
-        self.irrelevant_factors: int = ArgsParser.get_or_default(
-            kwargs, 'irrelevant_factors', 3)
-        self.relevant_factors: int = ArgsParser.get_or_default(
-            kwargs, 'relevant_factors', 3)
-        self.neural_space: int = ArgsParser.get_or_default(
-            kwargs, 'neural_space', 50)
-        self.behavioural_space: int = ArgsParser.get_or_default(
-            kwargs, 'behavioural_space', 1)
-        self.max_grad_norm: float = ArgsParser.get_or_default(
-            kwargs, 'max_grad_norm', 200)
-        self.timestep: float = ArgsParser.get_or_default(
-            kwargs, 'timestep', 0.01)
-        self.prior_variance: float = ArgsParser.get_or_default(
-            kwargs, 'prior_variance', 0.1)
+        self.encoded_space: int = int(ArgsParser.get_or_default(
+            kwargs, 'encoded_space', 64))
+        self.irrelevant_factors: int = int(ArgsParser.get_or_default(
+            kwargs, 'irrelevant_factors', 3))
+        self.relevant_factors: int = int(ArgsParser.get_or_default(
+            kwargs, 'relevant_factors', 3))
+        self.neural_space: int = int(ArgsParser.get_or_default(
+            kwargs, 'neural_space', 50))
+        self.behavioural_space: int = int(ArgsParser.get_or_default(
+            kwargs, 'behavioural_space', 1))
+        self.max_grad_norm: float = float(ArgsParser.get_or_default(
+            kwargs, 'max_grad_norm', 200))
+        self.timestep: float = float(ArgsParser.get_or_default(
+            kwargs, 'timestep', 0.01))
+        self.prior_variance: float = float(ArgsParser.get_or_default(
+            kwargs, 'prior_variance', 0.1))
+        self.with_behaviour = True
 
-        layers: Dict[str, Any] = defaultdict(
-            lambda: dict(
-                kernel_regularizer=tf.keras.regularizers.L2(l=0.1),
-                kernel_initializer=tf.keras.initializers.VarianceScaling(distribution='normal')),
-            ArgsParser.get_or_default(kwargs, 'layers', {}))
+        layers = ArgsParser.get_or_default(kwargs, 'layers', {})
+        if not isinstance(layers, defaultdict):
+            layers: Dict[str, Any] = defaultdict(
+                lambda: dict(
+                    kernel_regularizer=tf.keras.regularizers.L2(l=0.1),
+                    kernel_initializer=tf.keras.initializers.VarianceScaling(distribution='normal')),
+                layers
+            )
+        self.layers_settings = deepcopy(layers)
 
         # METRICS
         self.tracker_loss = tf.keras.metrics.Sum(name="loss")
@@ -114,7 +123,7 @@ class TNDM(tf.keras.Model):
             'tanh')
         relevant_decoder_args: Dict[str, Any] = layers['relevant_decoder']
         self.relevant_decoder_original_cell: float = ArgsParser.get_or_default_and_remove(
-            relevant_decoder_args, 'original_cell', True)
+            relevant_decoder_args, 'original_cell', False)
         if self.relevant_decoder_original_cell:
             relevant_decoder_cell = GeneratorGRU(
                 self.encoded_space, **relevant_decoder_args)
@@ -128,7 +137,7 @@ class TNDM(tf.keras.Model):
             'tanh')
         irrelevant_decoder_args: Dict[str, Any] = layers['irrelevant_decoder']
         self.irrelevant_decoder_original_cell: float = ArgsParser.get_or_default_and_remove(
-            irrelevant_decoder_args, 'original_cell', True)
+            irrelevant_decoder_args, 'original_cell', False)
         if self.irrelevant_decoder_original_cell:
             irrelevant_decoder_cell = GeneratorGRU(
                 self.encoded_space, **irrelevant_decoder_args)
@@ -166,14 +175,31 @@ class TNDM(tf.keras.Model):
         self.neural_dense = tf.keras.layers.Dense(
             self.neural_space, name="NeuralDense", **layers['neural_dense'])
 
+    @staticmethod
+    def load(filename) -> TNDM:
+        return ModelLoader.load(filename, TNDM)
+
+    def get_settings(self):
+        return dict(        
+            encoded_space=self.encoded_space,
+            irrelevant_factors=self.irrelevant_factors,
+            relevant_factors=self.relevant_factors,
+            neural_space=self.neural_space,
+            behavioural_space=self.behavioural_space,
+            max_grad_norm=self.max_grad_norm,
+            timestep=self.timestep,
+            prior_variance=self.prior_variance,
+            layers=self.layers_settings,
+            default_layer_settings=self.layers_settings.default_factory()
+        )
+
     @tf.function
     def call(self, inputs, training: bool = True):
         (g0_r, mean_r, logvar_r), (g0_i, mean_i,
                                    logvar_i) = self.encode(inputs, training=training)
         log_f, b, (z_r, z_i) = self.decode(
             g0_r, g0_i, inputs, training=training)
-        return log_f, b, (g0_r, mean_r, logvar_r), (g0_r,
-                                                    mean_i, logvar_i), (z_r, z_i), inputs
+        return log_f, b, (g0_r, mean_r, logvar_r), (g0_r, mean_i, logvar_i), (z_r, z_i), inputs
 
     @tf.function
     def decode(self, g0_r, g0_i, neural, training: bool = True):
@@ -252,102 +278,24 @@ class TNDM(tf.keras.Model):
     def compile(self, optimizer, loss_weights: tf.Variable, *args, **kwargs):
         super(TNDM, self).compile(
             loss=[
-                TNDM.poisson_loglike_loss(self.timestep),
-                TNDM.gaussian_loglike_loss(self.behaviour_sigma),
-                TNDM.relevant_kldiv_loss(self.prior_variance),
-                TNDM.irrelevant_kldiv_loss(self.prior_variance),
-                TNDM.reg_loss()],
+                poisson_loglike_loss(self.timestep, args_idx=([0,0], [0,5])),
+                gaussian_loglike_loss(self.behaviour_sigma, arg_idx=[0,1]),
+                gaussian_kldiv_loss(self.prior_variance, args_idx=([0,2,1], [0,2,2])),
+                gaussian_kldiv_loss(self.prior_variance, args_idx=([0,3,1], [0,3,2])),
+                regularization_loss(arg_idx=[1])],
             optimizer=optimizer,
         )
         self.loss_weights = loss_weights
         assert (loss_weights.shape == (5,)), ValueError(
             'The adaptive weights must have size 5 for TNDM')
 
-        self.tracker_gradient_dict = {'grads/' + TNDM.clean_layer_name(x.name):
-                                      tf.keras.metrics.Sum(name=TNDM.clean_layer_name(x.name)) for x in
+        self.tracker_gradient_dict = {'grads/' + clean_layer_name(x.name):
+                                      tf.keras.metrics.Sum(name=clean_layer_name(x.name)) for x in
                                       self.trainable_variables if 'bias' not in x.name.lower()}
-        self.tracker_norms_dict = {'norms/' + TNDM.clean_layer_name(x.name):
-                                   tf.keras.metrics.Sum(name=TNDM.clean_layer_name(x.name)) for x in
+        self.tracker_norms_dict = {'norms/' + clean_layer_name(x.name):
+                                   tf.keras.metrics.Sum(name=clean_layer_name(x.name)) for x in
                                    self.trainable_variables if 'bias' not in x.name.lower()}
         self.tracker_batch_count = tf.keras.metrics.Sum(name="batch_count")
-
-    @staticmethod
-    def gaussian_loglike_loss(behaviour_sigma):
-        @tf.function
-        def loss_fun(y_true, y_pred):
-            # GAUSSIAN LOG-LIKELIHOOD
-            behavioural = y_true
-            (_, b, _, _, _, _), _ = y_pred
-            targets = tf.cast(behavioural, dtype=tf.float32)
-            mse = 0.5 * \
-                tf.reduce_sum(tf.keras.backend.square(
-                    (targets - b) / tf.math.square(behaviour_sigma)))
-            constant = tf.reduce_sum(tf.ones_like(
-                b) * (tf.math.log(behaviour_sigma) + 0.5 * tf.math.log(2 * m.pi)))
-            return mse + constant
-        return loss_fun
-
-    @staticmethod
-    def poisson_loglike_loss(timestep):
-        @tf.function
-        def loss_fun(y_true, y_pred):
-            # POISSON LOG-LIKELIHOOD
-            (log_f, _, _, _, _, neural), _ = y_pred
-            targets = tf.cast(neural, dtype=tf.float32)
-            log_f = tf.cast(tf.math.log(timestep) +
-                            log_f, tf.float32)  # Timestep
-            return tf.reduce_sum(tf.nn.log_poisson_loss(
-                targets=targets,
-                log_input=log_f, compute_full_loss=True
-            ))
-        return loss_fun
-
-    @staticmethod
-    def relevant_kldiv_loss(prior_variance):
-        @tf.function
-        def loss_fun(y_true, y_pred):
-            # KL DIVERGENCE
-            (_, _, (_, mean_r, logvar_r), _, _, _), _ = y_pred
-            dist_prior = tfp.distributions.Normal(0., tf.sqrt(
-                prior_variance), name='RelevantPriorNormal')  # PriorVariance
-            dist_posterior = tfp.distributions.Normal(
-                mean_r, tf.exp(0.5 * logvar_r), name='RelevantPosteriorNormal')
-            return tf.reduce_sum(tfp.distributions.kl_divergence(
-                dist_prior, dist_posterior, allow_nan_stats=False, name=None
-            ))
-        return loss_fun
-
-    @staticmethod
-    def irrelevant_kldiv_loss(prior_variance):
-        @tf.function
-        def loss_fun(y_true, y_pred):
-            # KL DIVERGENCE
-            (_, _, _, (_, mean_i, logvar_i), _, _), _ = y_pred
-            dist_prior = tfp.distributions.Normal(0., tf.sqrt(
-                prior_variance), name='IrrelevantPriorNormal')  # PriorVariance
-            dist_posterior = tfp.distributions.Normal(mean_i, tf.exp(
-                0.5 * logvar_i), name='IrrelevantPosteriorNormal')
-            return tf.reduce_sum(tfp.distributions.kl_divergence(
-                dist_prior, dist_posterior, allow_nan_stats=False, name=None
-            ))
-        return loss_fun
-
-    @staticmethod
-    def reg_loss():
-        @tf.function
-        def loss_fun(y_true, y_pred):
-            # KL DIVERGENCE
-            _, regularization = y_pred
-            return tf.reduce_sum(regularization)
-        return loss_fun
-
-    @staticmethod
-    def clean_layer_name(name: str) -> str:
-        tks = name.split('/')[-3:-1]
-        if len(tks) < 2:
-            return tks[0].replace('_', '')
-        else:
-            return tks[0].split('_')[-1] + '_' + tks[1].replace('_', '')
 
     @tf.function
     def train_step(self, data):
@@ -421,7 +369,7 @@ class TNDM(tf.keras.Model):
 
         for grad, var in zip(grads, self.trainable_variables):
             if 'bias' not in var.name.lower():
-                cleaned_name = TNDM.clean_layer_name(var.name)
+                cleaned_name = clean_layer_name(var.name)
                 self.tracker_gradient_dict['grads/' +
                                            cleaned_name].update_state(tf.norm(grad, 1))
                 self.tracker_norms_dict['norms/' +

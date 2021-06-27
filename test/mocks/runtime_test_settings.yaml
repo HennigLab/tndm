@@ -5,6 +5,7 @@ data:
   latent_keys: {test: test_latent, train: train_latent, validation: valid_latent}
   metadata_filename: metadata.json
   neural_keys: {test: test_data, train: train_data, validation: valid_data}
+seed: 12345
 model:
   settings:
     default_layer_settings:
@@ -15,22 +16,9 @@ model:
         arguments: {l: 0.1}
         type: l2
     encoded_space: 64
-    irrelevant_factors: 1
     layers:
-      behavioural_dense: {behaviour_sigma: 1, behaviour_type: synchronous}
       encoder: {dropout: 0.05, var_max: 0.1, var_min: 0.1}
-      irrelevant_decoder:
-        kernel_initializer:
-          arguments: {distribution: normal, mode: fan_in, scale: 1.0}
-          type: variance_scaling
-        kernel_regularizer:
-          arguments: {l: 1}
-          type: l2
-        original_cell: false
-        recurrent_regularizer:
-          arguments: {l: 1}
-          type: l2
-      relevant_decoder:
+      decoder:
         kernel_initializer:
           arguments: {distribution: normal, mode: fan_in, scale: 1.0}
           type: variance_scaling
@@ -42,11 +30,10 @@ model:
           arguments: {l: 1}
           type: l2
     max_grad_norm: 200
-    relevant_factors: 2
+    factors: 3
     timestep: 0.01
-  type: tndm
-output: {directory: test/mocks/runtime_test_outputs, save_plots: false,
-  save_settings: true}
+  type: lfads
+output: {directory: test/mocks/runtime_test_outputs}
 runtime:
   batch_size: 32
   epochs: 2
@@ -55,7 +42,7 @@ runtime:
     arguments: {beta_1: 0.9, beta_2: 0.999, epsilon: 0.1}
     type: adam
   weights:
-    initial: [1.0, 1.0, 0.0, 0.0, 0.0]
-    min_weight: [1.0, 1.0, 0.0, 0.0, 0.0]
-    update_rate: [0.0, 0.0, 0.0005, 0.0005, 0.0005]
-    update_start: [0, 0, 1000, 1000, 0]
+    initial: [1.0, 0.0, 0.0]
+    min_weight: [1.0, 0.0, 0.0]
+    update_rate: [0.0, 0.0005, 0.0005]
+    update_start: [0, 1000, 0]

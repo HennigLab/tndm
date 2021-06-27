@@ -2,9 +2,12 @@ import tensorflow as tf
 import numpy as np
 import pytest
 import os
+import runpy
+from copy import deepcopy
+
 
 from latentneural.runtime import Runtime, ModelType
-from latentneural.utils import AdaptiveWeights
+from latentneural.utils import AdaptiveWeights, remove_folder, upsert_empty_folder
 
 
 @pytest.fixture(scope='module')
@@ -16,6 +19,18 @@ def json_filename():
 def yaml_filename():
     return os.path.join('.', 'test', 'mocks', 'runtime_test_settings.yaml')
 
+@pytest.fixture(scope='module', autouse=True)
+def cmd_line_args(request):
+    import sys
+    args = sys.argv
+    sys.argv[0] = 'r'
+    sys.argv[1] = json_filename
+
+    def restore_cmd_args():
+        sys.argv = args
+    request.addfinalizer(restore_cmd_args)
+
+    return True
 
 @pytest.mark.unit
 def test_train_wrap_tndm():
@@ -41,7 +56,6 @@ def test_train_wrap_tndm():
         batch_size=20,
         layers_settings={}
     )
-
 
 @pytest.mark.unit
 def test_train_wrap_tndm_different_specs():
@@ -88,6 +102,14 @@ def test_train_wrap_lfads():
         layers_settings=None
     )
 
+@pytest.fixture(scope='module', autouse=True)
+def cleanup(request):
+    def remove_test_dir():
+        folder = os.path.join(
+            'test', 'mocks', 'runtime_test_outputs')
+        upsert_empty_folder(folder)
+        remove_folder(folder)
+    request.addfinalizer(remove_test_dir)
 
 @pytest.mark.unit
 def test_train_wrap_lfads_different_specs():
@@ -111,12 +133,16 @@ def test_train_wrap_lfads_different_specs():
         }
     )
 
-
 @pytest.mark.unit
 def test_running_tndm_from_json(json_filename):
     Runtime.train_from_file(json_filename)
 
-
 @pytest.mark.unit
 def test_running_lfads_from_yaml(yaml_filename):
     Runtime.train_from_file(yaml_filename)
+
+@pytest.mark.unit
+def test_running_from_command_line(json_filename, cmd_line_args):
+    if cmd_line_args:
+        runpy.run_module('latentneural', run_name='__main__')
+    
