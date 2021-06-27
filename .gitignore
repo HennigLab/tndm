@@ -144,3 +144,4 @@ latentneural/data/storage/**/*.v2
 latentneural/data/storage/**/*.profile-empty
 latentneural/data/storage/**/plugins/
 test/mocks/runtime_test_outputs/
+latentneural/data/storage/lorenz/grid/*/training_settings.yaml

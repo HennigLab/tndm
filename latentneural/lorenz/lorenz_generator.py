@@ -215,7 +215,8 @@ class LorenzGenerator(object):
         return t, encoding(f * step), f, w, z
 
     def generate_spikes_and_behaviour(self, n: int = 30, base: float = 5, initial_conditions: Callable[..., Tuple[float, float, float]] = constant(),
-                                      l: int = 3, b: int = 3, y: int = 1, start: float = 0, stop: float = 1, step: float = 0.006, warmup: int = 0, seed: int = None,
+                                      l: int = 3, b: int = 3, y: int = 1, start: float = 0, stop: float = 1, step: float = 0.006, warmup: int = 0, 
+                                      behaviour_sigma: float = 1.0, seed: int = None,
                                       encoding: Callable[[np.ndarray], np.ndarray] = lambda x: stats.poisson.rvs(
                                           x).reshape(x.shape),
                                       trials: int = 1, conditions: int = 1, behaviour_overlay: Optional[Callable[..., np.ndarray]] = None) -> \
@@ -244,6 +245,7 @@ class LorenzGenerator(object):
                 spike count. Default to Poisson.
             trials (int, optional): number of trials k. Defaults to 1
             conditions (int, optional): number of conditions to try c. Defaults to 1
+            behaviour_sigma (float, optional): noise to add on behaviour data. Defaults to 1.0
 
         Returns:
             Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -291,7 +293,7 @@ class LorenzGenerator(object):
             # As in
             # https://github.com/colehurwitz/plfads/blob/bcf02b3d94fb1204f72836958acb21d60af96a15/generate_lorenz_data.py#L147
             behaviour = behaviours_noiseless + \
-                np.random.normal(0, 1, behaviours_noiseless.shape)
+                np.random.normal(0, behaviour_sigma, behaviours_noiseless.shape)
 
             f_list.append(f_tmp)
             s_list.append(encoding(f_tmp * step))
