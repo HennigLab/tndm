@@ -41,7 +41,7 @@ class ModelType(Enum):
 
     @property
     def weights_num(self) -> bool:
-        return 5 if self.name.lower() == 'tndm' else 3
+        return 6 if self.name.lower() == 'tndm' else 3
 
 class Parser(object):
 

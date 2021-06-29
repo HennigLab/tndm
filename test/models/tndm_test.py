@@ -66,10 +66,10 @@ def test_train_model_quick(save_location):
     behaviour_data_val = np.exp(np.random.randn(2, 100, 2))
 
     adaptive_weights = AdaptiveWeights(
-        initial=[1.0, .0, .0, .0, .0],
-        update_start=[0, 0, 1000, 1000, 0],
-        update_rate=[0., 0., 0.0005, 0.0005, 0.0005],
-        min_weight=[1.0, 0.0, 0.0, 0.0, 0.0]
+        initial=[1.0, .0, .0, .0, 1.0, .0],
+        update_start=[0, 0, 1000, 1000, 0, 0],
+        update_rate=[0., 0., 0.0005, 0.0005, 0.0, 0.0005],
+        min_weight=[1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
     )
 
     model = TNDM(neural_space=50, behaviour_space=2)

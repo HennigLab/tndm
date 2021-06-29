@@ -14,12 +14,12 @@ def test_learning_rate_stopping():
                           )  # trials X time X behaviour
 
     adaptive_weights = AdaptiveWeights(
-        initial=[0.5, 1, 1, 0, 0],
-        min_weight=[0., 0., 0., 0, 0],
-        max_weight=[1., 1., 1., 0, 0],
-        update_step=[1, 2, 1, 1, 1],
-        update_start=[2, 1, 1, 0, 0],
-        update_rate=[-0.05, -0.1, -0.01, 0, 0]
+        initial=[0.5, 1, 1, 0, 1, 0],
+        min_weight=[0., 0., 0., 0, 0, 0],
+        max_weight=[1., 1., 1., 0, 0, 0],
+        update_step=[1, 2, 1, 1, 1, 1],
+        update_start=[2, 1, 1, 0, 0, 0],
+        update_rate=[-0.05, -0.1, -0.01, 0, 0, 0]
     )
 
     lr = LearningRateStopping(0.001)

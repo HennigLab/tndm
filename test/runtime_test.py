@@ -50,8 +50,8 @@ def test_train_wrap_tndm():
                 np.random.randn(
                     2, 100, 4))),
         adaptive_weights=AdaptiveWeights(
-            initial=[1, 0, 0, 0, 0],
-            update_rate=[0, 0.002, 0.002, 0, 0],
+            initial=[1, 0, 0, 0, 1, 0],
+            update_rate=[0, 0.002, 0.002, 0, 0, 0],
         ),
         batch_size=20,
         layers_settings={}
@@ -73,8 +73,8 @@ def test_train_wrap_tndm_different_specs():
         adaptive_lr=dict(factor=0.95, patience=10, min_lr=1e-5),
         logdir=os.path.join('.', 'latentneural', 'data', 'storage'),
         adaptive_weights=AdaptiveWeights(
-            initial=[1, 0, 0, 0, 0],
-            update_rate=[0, 0.002, 0.002, 0, 0],
+            initial=[1, 0, 0, 0, 1, 0],
+            update_rate=[0, 0.002, 0.002, 0, 0, 0],
         ),
         batch_size=20,
         layers_settings={
