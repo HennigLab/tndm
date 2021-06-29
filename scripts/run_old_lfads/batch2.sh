@@ -1,4 +1,5 @@
 #!/bin/bash
+ulimit -m 9000000
 DATA_STEM=dataset.h5
 
 co_dim=0
