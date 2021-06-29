@@ -140,7 +140,7 @@ latentneural/data/storage/**/results
 latentneural/data/storage/**/results_old
 latentneural/data/storage/**/results.zip
 latentneural/data/storage/lorenz/20210610T215300/results_new_lfads/*
-latentneural/legacy
+# latentneural/legacy
 latentneural/data/storage/**/*.v2
 latentneural/data/storage/**/*.profile-empty
 latentneural/data/storage/**/plugins/
