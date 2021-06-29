@@ -89,7 +89,7 @@ class Parser(object):
 
         # RUNTIME
         runtime = ArgsParser.get_or_default(settings, 'runtime', {})
-        initial_lr, lr_callback = Parser.parse_learning_rate(
+        initial_lr, lr_callback, terminating_lr = Parser.parse_learning_rate(
             ArgsParser.get_or_default(runtime, 'learning_rate', {}), valid_available)
         optimizer = Parser.parse_optimizer(
             ArgsParser.get_or_default(runtime, 'optimizer', {}), initial_lr)
@@ -97,7 +97,7 @@ class Parser(object):
             ArgsParser.get_or_default(runtime, 'weights', {}), model_type)
         epochs = ArgsParser.get_or_default(runtime, 'epochs', 1000)
         batch_size = ArgsParser.get_or_default(runtime, 'batch_size', 8)
-        runtime_settings = optimizer, weights, lr_callback, epochs, batch_size
+        runtime_settings = (optimizer, weights, lr_callback, epochs, batch_size, terminating_lr)
 
         return model_type, model_settings, layers_settings, data, dataset_settings, runtime_settings, output_directory
 
@@ -178,12 +178,13 @@ class Parser(object):
 
     @staticmethod
     def parse_learning_rate(learning_rate_settings, valid_available: bool):
+        terminating_lr = ArgsParser.get_or_default_and_remove(learning_rate_settings, 'terminating', None)
         initial_lr = ArgsParser.get_or_default_and_remove(
             learning_rate_settings, 'initial', 1e-2)
         monitor = 'val_loss' if valid_available else 'train_loss'
         lr_callback = tf.keras.callbacks.ReduceLROnPlateau(
             monitor=monitor, **learning_rate_settings)
-        return initial_lr, lr_callback
+        return initial_lr, lr_callback, terminating_lr
 
     @staticmethod
     def parse_data(dataset: Dict[str, Any], keys: Dict[str, str]):

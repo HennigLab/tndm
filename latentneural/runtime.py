@@ -18,7 +18,7 @@ import getpass
 import socket
 
 from latentneural import TNDM, LFADS
-from latentneural.utils import AdaptiveWeights, logger, CustomEncoder
+from latentneural.utils import AdaptiveWeights, logger, CustomEncoder, LearningRateStopping
 from latentneural.data import DataManager
 import latentneural.losses as lnl
 from .parser import Parser, ModelType
@@ -80,7 +80,8 @@ class Runtime(object):
     def train(model_type: Union[str, ModelType], model_settings: Dict[str, Any], optimizer: tf.optimizers.Optimizer, epochs: int,
               train_dataset: Tuple[tf.Tensor, tf.Tensor], adaptive_weights: AdaptiveWeights,
               val_dataset: Optional[Tuple[tf.Tensor, tf.Tensor]] = None, batch_size: Optional[int] = None, logdir: Optional[str] = None,
-              adaptive_lr: Optional[Union[dict, tf.keras.callbacks.Callback]] = None, layers_settings: Dict[str, Any] = {}):
+              adaptive_lr: Optional[Union[dict, tf.keras.callbacks.Callback]] = None, layers_settings: Dict[str, Any] = {},
+              terminating_lr: Optional[float]=None):
 
         if isinstance(model_type, str):
             model_type = ModelType.from_string(model_type)
@@ -121,6 +122,8 @@ class Runtime(object):
             else:
                 callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(
                     monitor='val_loss', **adaptive_lr))
+        if terminating_lr is not None:
+            callbacks.append(LearningRateStopping(terminating_lr))
 
         model.build(input_shape=[None] + list(x.shape[1:]))
 
@@ -173,7 +176,7 @@ class Runtime(object):
         model_type, model_settings, layers_settings, data, dataset_settings, runtime_settings, output_directory = Parser.parse_settings(
             settings)
         (d_n_train, d_n_validation, _), (d_b_train, d_b_validation, _), _ = data
-        optimizer, adaptive_weights, adaptive_lr, epochs, batch_size = runtime_settings
+        optimizer, adaptive_weights, adaptive_lr, epochs, batch_size, terminating_lr = runtime_settings
         logger.info('Arguments parsed')
 
         model, history = Runtime.train(
@@ -187,7 +190,8 @@ class Runtime(object):
             adaptive_lr=adaptive_lr,
             epochs=epochs,
             batch_size=batch_size,
-            logdir=os.path.join(output_directory, 'logs'))
+            logdir=os.path.join(output_directory, 'logs'),
+            terminating_lr=terminating_lr)
         logger.info('Model training finished, now saving weights')
 
         model.save(os.path.join(output_directory, 'saved_model'))
@@ -205,6 +209,14 @@ class Runtime(object):
         settings = dict(
             model=model_settings,
             dataset=dataset_settings,
+            runtime_settings=dict(
+                optimizer=optimizer, 
+                adaptive_weights=adaptive_weights,
+                adaptive_lr=adaptive_lr,
+                epochs=epochs,
+                batch_size=batch_size,
+                terminating_lr=terminating_lr
+            ),
             default_layers_settings=layers_settings.default_factory(),
             layers_settings=layers_settings,
             seed=seed,
