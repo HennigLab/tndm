@@ -176,7 +176,7 @@ class LFADS(ModelLoader, tf.keras.Model):
                                               self.encoded_var_min) + self.encoded_var_min
             logvar = tf.math.log(var)
         else:
-            logvar = tf.zeros_like(mean) + self.encoded_var_min
+            logvar = tf.zeros_like(mean) + tf.math.log(self.encoded_var_min)
 
         g0 = self.sampling(
             tf.stack([mean, logvar], axis=-1), training=training)
