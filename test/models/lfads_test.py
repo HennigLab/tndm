@@ -123,7 +123,7 @@ def test_training_regression():
             neural_data_val,
             None))
 
-    log_f, _, _ = model.call(neural_data_train, training=False)
+    log_f, _, _, _ = model.call(neural_data_train, training=False)
 
     probs = 1 / (1 + np.exp(-log_f.numpy()))
 
