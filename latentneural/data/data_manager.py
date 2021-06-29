@@ -191,7 +191,7 @@ class DataManager(object):
             os.makedirs(dir_name)
         try:
             with open(settings_fname, 'w') as fp:
-                json.dump(obj=settings, fp=fp, cls=CustomEncoder)
+                json.dump(obj=settings, fp=fp, cls=CustomEncoder, indent=2)
 
             with h5py.File(data_fname, 'w') as hf:
                 for k, v in dataset.items():
