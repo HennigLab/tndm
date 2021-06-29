@@ -25,8 +25,11 @@ download-lorenz:
 	--wget -O latentneural/data/storage/lorenz/20210610T215300/metadata.json https://www.dropbox.com/s/0810h1ozhiyasmm/metadata.json?dl=1
 	--wget -O latentneural/data/storage/lorenz/20210610T215300/dataset.h5 https://www.dropbox.com/s/1xrfbh78de3amyd/dataset.h5?dl=1
 	--wget -O latentneural/data/storage/lorenz/20210610T215300/results.zip https://www.dropbox.com/s/yk8xc4ba7mw3a6s/results.zip?dl=1
-	--unzip latentneural/data/storage/lorenz/20210610T215300/results.zip -d latentneural/data/storage/lorenz/20210610T215300
+	--unzip latentneural/data/storage/lorenz/20210610T215300/results.zip -d latentneural/data/storage/lorenz/20210610T215300 -o
 	--rm latentneural/data/storage/lorenz/20210610T215300/results.zip
+	--wget -O latentneural/data/storage/lorenz/grid.zip https://www.dropbox.com/s/msdf0dfi9for977/grid.zip?dl=1
+	--unzip latentneural/data/storage/lorenz/grid.zip -d latentneural/data/storage/lorenz/ -o
+	--rm latentneural/data/storage/lorenz/grid.zip
 
 tensorboard-view:
 	--tensorboard dev upload --logdir latentneural/data/storage/lorenz/20210610T215300/results/lfads_log
