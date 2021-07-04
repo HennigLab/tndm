@@ -1992,7 +1992,9 @@ class LFADS(object):
       data_tuple = [('train', data_dict['train_data'],
                      data_dict['train_ext_input']),
                     ('valid', data_dict['valid_data'],
-                     data_dict['valid_ext_input'])]
+                     data_dict['valid_ext_input']),
+                    ('test', data_dict['test_data'],
+                     data_dict['test_ext_input'])]
       for data_kind, data_extxd, ext_input_extxi in data_tuple:
         if not output_fname:
           fname = "model_runs_" + data_name + '_' + data_kind + '_' + kind
