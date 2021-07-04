@@ -299,7 +299,7 @@ class LFADS(ModelLoader, tf.keras.Model):
             self.tracker_lr,
             self.tracker_loss_count,
             self.tracker_batch_count,
-        ]
+        ] + list(self.tracker_norms_dict.values()) + list(self.tracker_gradient_dict.values())
 
     @tf.function
     def test_step(self, data):
