@@ -22,6 +22,8 @@ class TNDM(ModelLoader, tf.keras.Model):
     def __init__(self, **kwargs: Dict[str, Any]):
         tf.keras.Model.__init__(self)
 
+        self.full_logs: bool = bool(ArgsParser.get_or_default(
+            kwargs, 'full_logs', False))
         self.encoded_space: int = int(ArgsParser.get_or_default(
             kwargs, 'encoded_space', 64))
         self.irrelevant_factors: int = int(ArgsParser.get_or_default(
@@ -66,7 +68,6 @@ class TNDM(ModelLoader, tf.keras.Model):
             name="loss_independence")
         self.tracker_loss_reg = tf.keras.metrics.Sum(name="loss_reg")
         self.tracker_loss_count = tf.keras.metrics.Sum(name="loss_count")
-        self.tracker_batch_count = tf.keras.metrics.Sum(name="batch_count")
         self.tracker_loss_w_neural_loglike = tf.keras.metrics.Mean(
             name="loss_w_neural_loglike")
         self.tracker_loss_w_behavioural_loglike = tf.keras.metrics.Mean(
@@ -197,7 +198,8 @@ class TNDM(ModelLoader, tf.keras.Model):
             timestep=self.timestep,
             prior_variance=self.prior_variance,
             layers=self.layers_settings,
-            default_layer_settings=self.layers_settings.default_factory()
+            default_layer_settings=self.layers_settings.default_factory(),
+            full_logs=self.full_logs
         )
 
     @tf.function
@@ -289,7 +291,7 @@ class TNDM(ModelLoader, tf.keras.Model):
                 gaussian_loglike_loss(self.behaviour_sigma, arg_idx=[0,1]),
                 gaussian_kldiv_loss(self.prior_variance, args_idx=([0,2,1], [0,2,2])),
                 gaussian_kldiv_loss(self.prior_variance, args_idx=([0,3,1], [0,3,2])),
-                covariance_loss(self.independent_batches, args_idx=([0,2,1], [0,2,2], [0,3,1], [0,3,2])),
+                covariance_loss(self.independent_batches, args_idx=([0,2,1], [0,2,2], [0,3,1], [0,3,2])), # Multiplied by batch size, to be proportional to it like most other losses
                 regularization_loss(arg_idx=[1])],
             optimizer=optimizer,
         )
@@ -297,12 +299,14 @@ class TNDM(ModelLoader, tf.keras.Model):
         assert (loss_weights.shape == (6,)), ValueError(
             'The adaptive weights must have size 6 for TNDM')
 
-        self.tracker_gradient_dict = {'grads/' + clean_layer_name(x.name):
-                                      tf.keras.metrics.Sum(name=clean_layer_name(x.name)) for x in
-                                      self.trainable_variables if 'bias' not in x.name.lower()}
-        self.tracker_norms_dict = {'norms/' + clean_layer_name(x.name):
-                                   tf.keras.metrics.Sum(name=clean_layer_name(x.name)) for x in
-                                   self.trainable_variables if 'bias' not in x.name.lower()}
+        if self.full_logs:        
+            self.tracker_gradient_dict = {'grads/' + clean_layer_name(x.name):
+                                            tf.keras.metrics.Sum(name=clean_layer_name(x.name)) for x in
+                                            self.trainable_variables if 'bias' not in x.name.lower()}
+            self.tracker_norms_dict = {'norms/' + clean_layer_name(x.name):
+                                        tf.keras.metrics.Sum(name=clean_layer_name(x.name)) for x in
+                                        self.trainable_variables if 'bias' not in x.name.lower()}
+            self.tracker_batch_count = tf.keras.metrics.Sum(name="batch_count")
 
     @tf.function
     def train_step(self, data):
@@ -375,33 +379,42 @@ class TNDM(ModelLoader, tf.keras.Model):
         self.tracker_lr.update_state(
             self.optimizer._decayed_lr('float32').numpy())
         self.tracker_loss_count.update_state(x.shape[0])
-        self.tracker_batch_count.update_state(1)
 
-        for grad, var in zip(grads, self.trainable_variables):
-            if 'bias' not in var.name.lower():
-                cleaned_name = clean_layer_name(var.name)
-                self.tracker_gradient_dict['grads/' +
-                                           cleaned_name].update_state(tf.norm(grad, 1))
-                self.tracker_norms_dict['norms/' +
-                                        cleaned_name].update_state(tf.norm(var, 1))
-
-        return {
+        core_logs = {
             'loss': self.tracker_loss.result() / self.tracker_loss_count.result(),
             'loss/neural': self.tracker_loss_neural_loglike.result() / self.tracker_loss_count.result(),
             'loss/behavioural': self.tracker_loss_behavioural_loglike.result() / self.tracker_loss_count.result(),
             'loss/relevant_kldiv': self.tracker_loss_relevant_kldiv.result() / self.tracker_loss_count.result(),
             'loss/irrelevant_kldiv': self.tracker_loss_irrelevant_kldiv.result() / self.tracker_loss_count.result(),
-            'loss/independence': self.tracker_loss_irrelevant_kldiv.result() / self.tracker_batch_count.result(),
-            'loss/reg': self.tracker_loss_reg.result() / self.tracker_batch_count.result(),
+            'loss/independence': self.tracker_loss_independence.result() / self.tracker_loss_count.result(),
+            'loss/reg': self.tracker_loss_reg.result(),
             'weights/neural_loglike': self.tracker_loss_w_neural_loglike.result(),
             'weights/behavioural_loglike': self.tracker_loss_w_behavioural_loglike.result(),
             'weights/relevant_kldiv': self.tracker_loss_w_relevant_kldiv.result(),
             'weights/irrelevant_kldiv': self.tracker_loss_w_irrelevant_kldiv.result(),
+            'weights/independence': self.tracker_loss_w_independence.result(),
             'weights/reg': self.tracker_loss_w_reg.result(),
-            'learning_rate': self.tracker_lr.result(),
-            **{k: v.result() / self.tracker_batch_count.result() for k, v in self.tracker_gradient_dict.items()},
-            **{k: v.result() / self.tracker_batch_count.result() for k, v in self.tracker_norms_dict.items()}
+            'learning_rate': self.tracker_lr.result()
         }
+
+        if self.full_logs:
+            self.tracker_batch_count.update_state(1)
+
+            for grad, var in zip(grads, self.trainable_variables):
+                if 'bias' not in var.name.lower():
+                    cleaned_name = clean_layer_name(var.name)
+                    self.tracker_gradient_dict['grads/' +
+                                            cleaned_name].update_state(tf.norm(grad, 1))
+                    self.tracker_norms_dict['norms/' +
+                                            cleaned_name].update_state(tf.norm(var, 1))
+
+            return {
+                **core_logs,
+                **{k: v.result() / self.tracker_batch_count.result() for k, v in self.tracker_gradient_dict.items()},
+                **{k: v.result() / self.tracker_batch_count.result() for k, v in self.tracker_norms_dict.items()}
+            }
+        else:
+            return core_logs
 
     @property
     def metrics(self):
@@ -410,7 +423,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         # or at the start of `evaluate()`.
         # If you don't implement this property, you have to call
         # `reset_states()` yourself at the time of your choosing.
-        return [
+        core_losses = [
             self.tracker_loss,
             self.tracker_loss_neural_loglike,
             self.tracker_loss_behavioural_loglike,
@@ -425,9 +438,12 @@ class TNDM(ModelLoader, tf.keras.Model):
             self.tracker_loss_w_independence,
             self.tracker_loss_w_reg,
             self.tracker_lr,
-            self.tracker_loss_count,
-            self.tracker_batch_count,
-        ] + list(self.tracker_norms_dict.values()) + list(self.tracker_gradient_dict.values())
+            self.tracker_loss_count
+        ]
+        if self.full_logs:
+            return core_losses + [self.tracker_batch_count] + list(self.tracker_norms_dict.values()) + list(self.tracker_gradient_dict.values())
+        else:
+            return core_losses
 
     @tf.function
     def test_step(self, data):
@@ -455,7 +471,6 @@ class TNDM(ModelLoader, tf.keras.Model):
         self.tracker_loss_independence.update_state(independence_loss)
         self.tracker_loss_reg.update_state(reg_loss)
         self.tracker_loss_count.update_state(x.shape[0])
-        self.tracker_batch_count.update_state(1)
 
         # Return a dict mapping metric names to current value.
         # Note that it will include the loss (tracked in self.metrics).
@@ -465,6 +480,5 @@ class TNDM(ModelLoader, tf.keras.Model):
             'loss/behavioural': self.tracker_loss_behavioural_loglike.result() / self.tracker_loss_count.result(),
             'loss/relevant_kldiv': self.tracker_loss_relevant_kldiv.result() / self.tracker_loss_count.result(),
             'loss/irrelevant_kldiv': self.tracker_loss_irrelevant_kldiv.result() / self.tracker_loss_count.result(),
-            'loss/irrelevant_kldiv': self.tracker_loss_independence.result() / self.tracker_batch_count.result(),
-            'loss/independence': self.tracker_loss_independence.result() / self.tracker_batch_count.result(),
+            'loss/independence': self.tracker_loss_independence.result() / self.tracker_loss_count.result(),
         }

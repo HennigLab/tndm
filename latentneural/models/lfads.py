@@ -21,6 +21,8 @@ class LFADS(ModelLoader, tf.keras.Model):
     def __init__(self, **kwargs: Dict[str, Any]):
         tf.keras.Model.__init__(self)
 
+        self.full_logs: bool = bool(ArgsParser.get_or_default(
+            kwargs, 'full_logs', False))
         self.encoded_space: int = int(ArgsParser.get_or_default(
             kwargs, 'encoded_space', 64))
         self.factors: int = int(ArgsParser.get_or_default(kwargs, 'factors', 3))
@@ -126,7 +128,8 @@ class LFADS(ModelLoader, tf.keras.Model):
             timestep=self.timestep,
             prior_variance=self.prior_variance,
             layers=self.layers_settings,
-            default_layer_settings=self.layers_settings.default_factory()
+            default_layer_settings=self.layers_settings.default_factory(),
+            full_logs=self.full_logs
         )
 
     @tf.function
@@ -191,13 +194,15 @@ class LFADS(ModelLoader, tf.keras.Model):
             optimizer=optimizer,
         )
         self.loss_weights = loss_weights
-        self.tracker_gradient_dict = {'grads/' + clean_layer_name(x.name):
-                                      tf.keras.metrics.Sum(name=clean_layer_name(x.name)) for x in
-                                      self.trainable_variables if 'bias' not in x.name.lower()}
-        self.tracker_norms_dict = {'norms/' + clean_layer_name(x.name):
-                                   tf.keras.metrics.Sum(name=clean_layer_name(x.name)) for x in
-                                   self.trainable_variables if 'bias' not in x.name.lower()}
-        self.tracker_batch_count = tf.keras.metrics.Sum(name="batch_count")
+
+        if self.full_logs:
+            self.tracker_gradient_dict = {'grads/' + clean_layer_name(x.name):
+                                        tf.keras.metrics.Sum(name=clean_layer_name(x.name)) for x in
+                                        self.trainable_variables if 'bias' not in x.name.lower()}
+            self.tracker_norms_dict = {'norms/' + clean_layer_name(x.name):
+                                    tf.keras.metrics.Sum(name=clean_layer_name(x.name)) for x in
+                                    self.trainable_variables if 'bias' not in x.name.lower()}
+            self.tracker_batch_count = tf.keras.metrics.Sum(name="batch_count")
 
     @tf.function
     def train_step(self, data):
@@ -258,28 +263,34 @@ class LFADS(ModelLoader, tf.keras.Model):
         self.tracker_lr.update_state(
             self.optimizer._decayed_lr('float32').numpy())
         self.tracker_loss_count.update_state(x.shape[0])
-        self.tracker_batch_count.update_state(1)
 
-        for grad, var in zip(grads, self.trainable_variables):
-            if 'bias' not in var.name.lower():
-                cleaned_name = clean_layer_name(var.name)
-                self.tracker_gradient_dict['grads/' +
-                                           cleaned_name].update_state(tf.norm(grad, 1))
-                self.tracker_norms_dict['norms/' +
-                                        cleaned_name].update_state(tf.norm(var, 1))
+        core_logs = {'loss': self.tracker_loss.result() / self.tracker_loss_count.result(),
+                'loss/loglike': self.tracker_loss_loglike.result() / self.tracker_loss_count.result(),
+                'loss/kldiv': self.tracker_loss_kldiv.result() / self.tracker_loss_count.result(),
+                'loss/reg': self.tracker_loss_reg.result(),
+                'weights/loglike': self.tracker_loss_w_loglike.result(),
+                'weights/kldiv': self.tracker_loss_w_kldiv.result(),
+                'weights/reg': self.tracker_loss_w_reg.result(),
+                'learning_rate': self.tracker_lr.result()}
 
-        return {
-            'loss': self.tracker_loss.result() / self.tracker_loss_count.result(),
-            'loss/loglike': self.tracker_loss_loglike.result() / self.tracker_loss_count.result(),
-            'loss/kldiv': self.tracker_loss_kldiv.result() / self.tracker_loss_count.result(),
-            'loss/reg': self.tracker_loss_reg.result(),
-            'weights/loglike': self.tracker_loss_w_loglike.result(),
-            'weights/kldiv': self.tracker_loss_w_kldiv.result(),
-            'weights/reg': self.tracker_loss_w_reg.result(),
-            'learning_rate': self.tracker_lr.result(),
-            **{k: v.result() / self.tracker_batch_count.result() for k, v in self.tracker_gradient_dict.items()},
-            **{k: v.result() / self.tracker_batch_count.result() for k, v in self.tracker_norms_dict.items()}
-        }
+        if self.full_logs:
+            self.tracker_batch_count.update_state(1)
+
+            for grad, var in zip(grads, self.trainable_variables):
+                if 'bias' not in var.name.lower():
+                    cleaned_name = clean_layer_name(var.name)
+                    self.tracker_gradient_dict['grads/' +
+                                            cleaned_name].update_state(tf.norm(grad, 1))
+                    self.tracker_norms_dict['norms/' +
+                                            cleaned_name].update_state(tf.norm(var, 1))
+
+            return {
+                **core_logs
+                **{k: v.result() / self.tracker_batch_count.result() for k, v in self.tracker_gradient_dict.items()},
+                **{k: v.result() / self.tracker_batch_count.result() for k, v in self.tracker_norms_dict.items()}
+            }
+        else:
+            return core_logs
 
     @property
     def metrics(self):
@@ -288,7 +299,7 @@ class LFADS(ModelLoader, tf.keras.Model):
         # or at the start of `evaluate()`.
         # If you don't implement this property, you have to call
         # `reset_states()` yourself at the time of your choosing.
-        return [
+        core_losses = [
             self.tracker_loss,
             self.tracker_loss_loglike,
             self.tracker_loss_kldiv,
@@ -298,8 +309,11 @@ class LFADS(ModelLoader, tf.keras.Model):
             self.tracker_loss_w_reg,
             self.tracker_lr,
             self.tracker_loss_count,
-            self.tracker_batch_count,
-        ] + list(self.tracker_norms_dict.values()) + list(self.tracker_gradient_dict.values())
+        ]
+        if self.full_logs:
+            return core_losses + [self.tracker_batch_count] + list(self.tracker_norms_dict.values()) + list(self.tracker_gradient_dict.values())
+        else:
+            return core_losses
 
     @tf.function
     def test_step(self, data):

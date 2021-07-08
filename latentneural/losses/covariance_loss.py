@@ -20,5 +20,5 @@ def covariance_loss(independent_batches, args_idx: Tuple[List[int], List[int], L
         sample_i = tf.reshape(sample_i, [sample_i.shape[0] * sample_i.shape[1], sample_i.shape[2]])
         cov = tfp.stats.covariance(sample_r, sample_i, sample_axis=0, event_axis=-1)
         squared_cov_matrix_rel_irel = cov ** 2
-        return tf.reduce_mean(squared_cov_matrix_rel_irel)
+        return tf.reduce_mean(squared_cov_matrix_rel_irel) * gr_mean.shape[-2] # Multiplied by batch size, to be proportional to it like most other losses
     return loss_fun
