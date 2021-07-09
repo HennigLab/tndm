@@ -121,7 +121,7 @@ class Runtime(object):
                 callbacks.append(adaptive_lr)
             else:
                 callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(
-                    monitor='val_loss', **adaptive_lr))
+                    monitor='val_loss/reconstruction', **adaptive_lr))
         if terminating_lr is not None:
             callbacks.append(LearningRateStopping(terminating_lr))
 

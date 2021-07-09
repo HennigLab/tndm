@@ -181,7 +181,7 @@ class Parser(object):
         terminating_lr = ArgsParser.get_or_default_and_remove(learning_rate_settings, 'terminating', None)
         initial_lr = ArgsParser.get_or_default_and_remove(
             learning_rate_settings, 'initial', 1e-2)
-        monitor = 'val_loss' if valid_available else 'train_loss'
+        monitor = 'val_loss/reconstruction' if valid_available else 'train_loss/reconstruction'
         lr_callback = tf.keras.callbacks.ReduceLROnPlateau(
             monitor=monitor, **learning_rate_settings)
         return initial_lr, lr_callback, terminating_lr

@@ -268,6 +268,7 @@ class LFADS(ModelLoader, tf.keras.Model):
                 'loss/loglike': self.tracker_loss_loglike.result() / self.tracker_loss_count.result(),
                 'loss/kldiv': self.tracker_loss_kldiv.result() / self.tracker_loss_count.result(),
                 'loss/reg': self.tracker_loss_reg.result(),
+                'loss/reconstruction': self.tracker_loss_loglike.result() / self.tracker_loss_count.result(),
                 'weights/loglike': self.tracker_loss_w_loglike.result(),
                 'weights/kldiv': self.tracker_loss_w_kldiv.result(),
                 'weights/reg': self.tracker_loss_w_reg.result(),
@@ -339,4 +340,5 @@ class LFADS(ModelLoader, tf.keras.Model):
             'loss': self.tracker_loss.result() / self.tracker_loss_count.result(),
             'loss/loglike': self.tracker_loss_loglike.result() / self.tracker_loss_count.result(),
             'loss/kldiv': self.tracker_loss_kldiv.result() / self.tracker_loss_count.result(),
+            'loss/reconstruction': self.tracker_loss_loglike.result() / self.tracker_loss_count.result(),
         }
