@@ -275,15 +275,18 @@ class Runtime(object):
             b_r2 = None
 
         # Latent R2
-        z_unsrt = z.T.reshape(z.T.shape[0], z.T.shape[1] * z.T.shape[2]).T
-        l = latent.T.reshape(latent.T.shape[0], latent.T.shape[1] * latent.T.shape[2]).T
-        if ridge_model is None:
-            ridge_model = Ridge(alpha=1.0)
-            ridge_model.fit(z_unsrt, l)
-        z_srt = ridge_model.predict(z_unsrt)
-        unexplained_error = tf.reduce_sum(tf.square(l - z_srt)).numpy()
-        total_error = tf.reduce_sum(tf.square(l - tf.reduce_mean(l, axis=[0,1]))).numpy()
-        l_r2 = 1 - (unexplained_error / (total_error + 1e-10))
+        if latent is not None:
+            z_unsrt = z.T.reshape(z.T.shape[0], z.T.shape[1] * z.T.shape[2]).T
+            l = latent.T.reshape(latent.T.shape[0], latent.T.shape[1] * latent.T.shape[2]).T
+            if ridge_model is None:
+                ridge_model = Ridge(alpha=1.0)
+                ridge_model.fit(z_unsrt, l)
+            z_srt = ridge_model.predict(z_unsrt)
+            unexplained_error = tf.reduce_sum(tf.square(l - z_srt)).numpy()
+            total_error = tf.reduce_sum(tf.square(l - tf.reduce_mean(l, axis=[0,1]))).numpy()
+            l_r2 = 1 - (unexplained_error / (total_error + 1e-10))
+        else:
+            l_r2 = None
         return dict(
             behaviour_likelihood=b_like, 
             neural_likelihood=n_like,
