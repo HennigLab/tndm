@@ -387,7 +387,7 @@ class TNDM(ModelLoader, tf.keras.Model):
             'loss/relevant_kldiv': self.tracker_loss_relevant_kldiv.result() / self.tracker_loss_count.result(),
             'loss/irrelevant_kldiv': self.tracker_loss_irrelevant_kldiv.result() / self.tracker_loss_count.result(),
             'loss/independence': self.tracker_loss_independence.result() / self.tracker_loss_count.result(),
-            'loss/reconstruction': (self.tracker_loss_neural_loglike.result() + self.tracker_loss_behavioural_loglike.result()) / self.tracker_loss_count.result(),
+            'loss/reconstruction': (self.loss_weights[0] * self.tracker_loss_neural_loglike.result() + self.loss_weights[1] * self.tracker_loss_behavioural_loglike.result()) / self.tracker_loss_count.result(),
             'loss/reg': self.tracker_loss_reg.result(),
             'weights/neural_loglike': self.tracker_loss_w_neural_loglike.result(),
             'weights/behavioural_loglike': self.tracker_loss_w_behavioural_loglike.result(),
@@ -482,5 +482,5 @@ class TNDM(ModelLoader, tf.keras.Model):
             'loss/relevant_kldiv': self.tracker_loss_relevant_kldiv.result() / self.tracker_loss_count.result(),
             'loss/irrelevant_kldiv': self.tracker_loss_irrelevant_kldiv.result() / self.tracker_loss_count.result(),
             'loss/independence': self.tracker_loss_independence.result() / self.tracker_loss_count.result(),
-            'loss/reconstruction': (self.tracker_loss_neural_loglike.result() + self.tracker_loss_behavioural_loglike.result()) / self.tracker_loss_count.result(),
+            'loss/reconstruction': (self.loss_weights[0] * self.tracker_loss_neural_loglike.result() + self.loss_weights[1] * self.tracker_loss_behavioural_loglike.result()) / self.tracker_loss_count.result(),
         }
