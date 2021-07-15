@@ -265,7 +265,7 @@ class TNDM(ModelLoader, tf.keras.Model):
                 logit_var_r) * (self.encoded_var_max - self.encoded_var_min) + self.encoded_var_min
             logvar_r = tf.math.log(var_r)
         else:
-            logvar_r = tf.zeros_like(mean_r) + self.encoded_var_min
+            logvar_r = tf.zeros_like(mean_r) + tf.math.log(self.encoded_var_min)
         g0_r = self.relevant_sampling(
             tf.stack([mean_r, logvar_r], axis=-1), training=training)
 
