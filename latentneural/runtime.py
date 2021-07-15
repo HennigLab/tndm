@@ -197,8 +197,9 @@ class Runtime(object):
         model.save(os.path.join(output_directory, 'saved_model'))
         logger.info('Weights saved, now saving metrics history')
 
-        pd.DataFrame(history.history).to_csv(os.path.join(output_directory, 'history.csv'))
-        logger.info('Metrics history saved, now evaluating the model')
+        if history is not None:
+            pd.DataFrame(history.history).to_csv(os.path.join(output_directory, 'history.csv'))
+            logger.info('Metrics history saved, now evaluating the model')
 
         stats = Runtime.evaluate_model(data, model)
         with open(os.path.join(output_directory, 'performance.json'), 'w') as fp:
