@@ -16,18 +16,16 @@ tf.config.run_functions_eagerly(True)
 
 class LFADS(ModelLoader, tf.keras.Model):
 
-    _WEIGHTS_NUM = 3
-
     def __init__(self, **kwargs: Dict[str, Any]):
         tf.keras.Model.__init__(self)
 
         self.full_logs: bool = bool(ArgsParser.get_or_default(
             kwargs, 'full_logs', False))
-        self.encoded_space: int = int(ArgsParser.get_or_default(
-            kwargs, 'encoded_space', 64))
+        self.encoder_dim: int = int(ArgsParser.get_or_default(
+            kwargs, 'encoder_dim', 64))
         self.factors: int = int(ArgsParser.get_or_default(kwargs, 'factors', 3))
-        self.neural_space: int = int(ArgsParser.get_or_default(
-            kwargs, 'neural_space', 50))
+        self.neural_dim: int = int(ArgsParser.get_or_default(
+            kwargs, 'neural_dim', 50))
         self.max_grad_norm: float = float(ArgsParser.get_or_default(
             kwargs, 'max_grad_norm', 200))
         self.timestep: float = float(ArgsParser.get_or_default(
@@ -75,21 +73,21 @@ class LFADS(ModelLoader, tf.keras.Model):
             self.encoded_var_trainable = False
 
         forward_layer = tf.keras.layers.GRU(
-            self.encoded_space, time_major=False, name="EncoderGRUForward", return_sequences=True, **encoder_args)
+            self.encoder_dim, time_major=False, name="EncoderGRUForward", return_sequences=True, **encoder_args)
         backward_layer = tf.keras.layers.GRU(
-            self.encoded_space, time_major=False, name="EncoderGRUBackward", return_sequences=True, go_backwards=True, **encoder_args)
+            self.encoder_dim, time_major=False, name="EncoderGRUBackward", return_sequences=True, go_backwards=True, **encoder_args)
         self.encoder = tf.keras.layers.Bidirectional(
             forward_layer, backward_layer=backward_layer, name='EncoderRNN')
         self.flatten_post_encoder = tf.keras.layers.Flatten()
         encoder_dense_args: Dict[str, Any] = layers['encoder_dense']
         self.encoder_dense = tf.keras.layers.Dense(
-            self.encoded_space, name="EncoderDense", **encoder_dense_args)
+            self.encoder_dim, name="EncoderDense", **encoder_dense_args)
 
         # DISTRIBUTION
         self.dense_mean = tf.keras.layers.Dense(
-            self.encoded_space, name="DenseMean", **layers['dense_mean'])
+            self.encoder_dim, name="DenseMean", **layers['dense_mean'])
         self.dense_logvar = tf.keras.layers.Dense(
-            self.encoded_space, name="DenseLogVar", **layers['dense_logvar'])
+            self.encoder_dim, name="DenseLogVar", **layers['dense_logvar'])
 
         # SAMPLING
         self.sampling = GaussianSampling(name="GaussianSampling")
@@ -100,12 +98,12 @@ class LFADS(ModelLoader, tf.keras.Model):
         self.original_generator: float = ArgsParser.get_or_default_and_remove(
             decoder_args, 'original_cell', False)
         if self.original_generator:
-            decoder_cell = GeneratorGRU(self.encoded_space, **decoder_args)
+            decoder_cell = GeneratorGRU(self.encoder_dim, **decoder_args)
             self.decoder = tf.keras.layers.RNN(
                 decoder_cell, return_sequences=True, time_major=False, name='DecoderGRU')
         else:
             self.decoder = tf.keras.layers.GRU(
-                self.encoded_space, return_sequences=True, time_major=False, name='DecoderGRU', **decoder_args)
+                self.encoder_dim, return_sequences=True, time_major=False, name='DecoderGRU', **decoder_args)
 
         # DIMENSIONALITY REDUCTION
         self.dense = tf.keras.layers.Dense(
@@ -113,7 +111,7 @@ class LFADS(ModelLoader, tf.keras.Model):
 
         # NEURAL
         self.neural_dense = tf.keras.layers.Dense(
-            self.neural_space, name="NeuralDense", **layers['neural_dense'])
+            self.neural_dim, name="NeuralDense", **layers['neural_dense'])
 
     @staticmethod
     def load(filename) -> LFADS:
@@ -121,9 +119,9 @@ class LFADS(ModelLoader, tf.keras.Model):
 
     def get_settings(self):
         return dict(        
-            encoded_space=self.encoded_space,
+            encoder_dim=self.encoder_dim,
             factors=self.factors,
-            neural_space=self.neural_space,
+            neural_dim=self.neural_dim,
             max_grad_norm=self.max_grad_norm,
             timestep=self.timestep,
             prior_variance=self.prior_variance,
