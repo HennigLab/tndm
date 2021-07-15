@@ -5,7 +5,7 @@ from typing import Dict, Any
 from collections import defaultdict
 import json
 
-from latentneural.utils import ArgsParser, clean_layer_name
+from latentneural.utils import ArgsParser, clean_layer_name, logger
 from latentneural.layers import GaussianSampling, GeneratorGRU
 from latentneural.losses import gaussian_kldiv_loss, poisson_loglike_loss, regularization_loss
 from .model_loader import ModelLoader
@@ -23,6 +23,10 @@ class LFADS(ModelLoader, tf.keras.Model):
             kwargs, 'full_logs', False))
         self.encoder_dim: int = int(ArgsParser.get_or_default(
             kwargs, 'encoder_dim', 64))
+        self.initial_condition_dim: int = int(ArgsParser.get_or_default(
+            kwargs, 'initial_condition_dim', 64))
+        self.decoder_dim: int = int(ArgsParser.get_or_default(
+            kwargs, 'decoder_dim', 64))
         self.factors: int = int(ArgsParser.get_or_default(kwargs, 'factors', 3))
         self.neural_dim: int = int(ArgsParser.get_or_default(
             kwargs, 'neural_dim', 50))
@@ -32,13 +36,15 @@ class LFADS(ModelLoader, tf.keras.Model):
             kwargs, 'timestep', 0.01))
         self.prior_variance: float = float(ArgsParser.get_or_default(
             kwargs, 'prior_variance', 0.1))
+        self.dropout: float = float(ArgsParser.get_or_default(
+            kwargs, 'dropout', 0.05))
         self.with_behaviour = False
 
         layers = ArgsParser.get_or_default(kwargs, 'layers', {})
         if not isinstance(layers, defaultdict):
             layers: Dict[str, Any] = defaultdict(
                 lambda: dict(
-                    kernel_regularizer=tf.keras.regularizers.L2(l=0.1),
+                    kernel_regularizer=tf.keras.regularizers.L2(l=1),
                     kernel_initializer=tf.keras.initializers.VarianceScaling(distribution='normal')),
                 layers
             )
@@ -57,6 +63,7 @@ class LFADS(ModelLoader, tf.keras.Model):
         self.tracker_lr = tf.keras.metrics.Mean(name="lr")
 
         # ENCODER
+        self.initial_dropout = tf.keras.layers.Dropout(self.dropout)
         encoder_args: Dict[str, Any] = layers['encoder']
         self.encoded_var_min: float = ArgsParser.get_or_default_and_remove(
             encoder_args, 'var_min', 0.1)
@@ -73,37 +80,40 @@ class LFADS(ModelLoader, tf.keras.Model):
             self.encoded_var_trainable = False
 
         forward_layer = tf.keras.layers.GRU(
-            self.encoder_dim, time_major=False, name="EncoderGRUForward", return_sequences=True, **encoder_args)
+            self.encoder_dim, time_major=False, name="EncoderGRUForward", return_state=True, **encoder_args)
         backward_layer = tf.keras.layers.GRU(
-            self.encoder_dim, time_major=False, name="EncoderGRUBackward", return_sequences=True, go_backwards=True, **encoder_args)
+            self.encoder_dim, time_major=False, name="EncoderGRUBackward", return_state=True, go_backwards=True, **encoder_args)
         self.encoder = tf.keras.layers.Bidirectional(
-            forward_layer, backward_layer=backward_layer, name='EncoderRNN')
-        self.flatten_post_encoder = tf.keras.layers.Flatten()
-        encoder_dense_args: Dict[str, Any] = layers['encoder_dense']
-        self.encoder_dense = tf.keras.layers.Dense(
-            self.encoder_dim, name="EncoderDense", **encoder_dense_args)
-
+            forward_layer, backward_layer=backward_layer, name='EncoderRNN', merge_mode='concat')
+        self.dropout_post_encoder = tf.keras.layers.Dropout(self.dropout)
+        
         # DISTRIBUTION
         self.dense_mean = tf.keras.layers.Dense(
-            self.encoder_dim, name="DenseMean", **layers['dense_mean'])
+            self.initial_condition_dim, name="DenseMean", **layers['dense_mean'])
         self.dense_logvar = tf.keras.layers.Dense(
-            self.encoder_dim, name="DenseLogVar", **layers['dense_logvar'])
+            self.initial_condition_dim, name="DenseLogVar", **layers['dense_logvar'])
 
         # SAMPLING
         self.sampling = GaussianSampling(name="GaussianSampling")
 
         # DECODERS
+        if self.decoder_dim != self.initial_condition_dim:
+            self.dense_pre_decoder = tf.keras.layers.Dense(
+                self.decoder_dim, name="DensePreDecoder", **layers['dense_pre_decoder'])
         self.pre_decoder_activation = tf.keras.layers.Activation('tanh')
         decoder_args: Dict[str, Any] = layers['decoder']
         self.original_generator: float = ArgsParser.get_or_default_and_remove(
             decoder_args, 'original_cell', False)
+        decoder_dropout = ArgsParser.get_or_default_and_remove(
+            decoder_args, 'dropout', self.dropout)
         if self.original_generator:
-            decoder_cell = GeneratorGRU(self.encoder_dim, **decoder_args)
+            decoder_cell = GeneratorGRU(self.decoder_dim, **decoder_args)
             self.decoder = tf.keras.layers.RNN(
                 decoder_cell, return_sequences=True, time_major=False, name='DecoderGRU')
+            logger.warning('Dropout not implemented for the original decoder')
         else:
             self.decoder = tf.keras.layers.GRU(
-                self.encoder_dim, return_sequences=True, time_major=False, name='DecoderGRU', **decoder_args)
+                self.decoder_dim, return_sequences=True, time_major=False, dropout=decoder_dropout, name='DecoderGRU', **decoder_args)
 
         # DIMENSIONALITY REDUCTION
         self.dense = tf.keras.layers.Dense(
@@ -142,6 +152,8 @@ class LFADS(ModelLoader, tf.keras.Model):
         u = tf.stack([tf.zeros_like(inputs)[:, :, -1]
                      for i in range(self.decoder.cell.units)], axis=-1)
 
+        if self.decoder_dim != self.initial_condition_dim:
+            g0 = self.dense_pre_decoder(g0, training=training)
         g0_activated = self.pre_decoder_activation(g0)
         g = self.decoder(u, initial_state=g0_activated, training=training)
 
@@ -150,8 +162,7 @@ class LFADS(ModelLoader, tf.keras.Model):
         # soft-clipping the log-firingrate log(self.timestep) so that the
         # log-likelihood does not return NaN
         # (https://github.com/tensorflow/tensorflow/issues/47019)
-        log_f = tf.math.log(self.timestep) + \
-            tf.tanh(self.neural_dense(z, training=training)) * 10
+        log_f = tf.tanh(self.neural_dense(z, training=training)) * 10
 
         # In order to be able to auto-encode, the dimensions should be the same
         if not self.built:
@@ -162,17 +173,15 @@ class LFADS(ModelLoader, tf.keras.Model):
 
     @tf.function
     def encode(self, inputs, training: bool = True):
-        encoded = self.encoder(inputs, training=training)
-        encoded_flattened = self.flatten_post_encoder(
-            encoded, training=training)
-        encoded_reduced = self.encoder_dense(
-            encoded_flattened, training=training)
+        dropped_neural = self.initial_dropout(inputs, training=training)
+        encoded = self.encoder(dropped_neural, training=training)[0]
+        dropped_encoded = self.dropout_post_encoder(encoded, training=training)
 
-        mean = self.dense_mean(encoded_reduced, training=training)
+        mean = self.dense_mean(dropped_encoded, training=training)
 
         if self.encoded_var_trainable:
             logit_var = tf.exp(self.dense_logvar(
-                encoded_reduced, training=training))
+                dropped_encoded, training=training))
             var = tf.nn.sigmoid(logit_var) * (self.encoded_var_max -
                                               self.encoded_var_min) + self.encoded_var_min
             logvar = tf.math.log(var)

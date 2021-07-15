@@ -213,6 +213,7 @@ class TNDM(ModelLoader, tf.keras.Model):
             rel_factors=self.rel_factors,
             neural_dim=self.neural_dim,
             behaviour_dim=self.behaviour_dim,
+            timestep=self.timestep,
             max_grad_norm=self.max_grad_norm,
             prior_variance=self.prior_variance,
             layers=self.layers_settings,
@@ -238,7 +239,7 @@ class TNDM(ModelLoader, tf.keras.Model):
 
         # Relevant
         if self.rel_decoder_dim != self.rel_initial_condition_dim:
-            g0_r = self.relevant_dense_pre_decoder(g0_r)
+            g0_r = self.relevant_dense_pre_decoder(g0_r, training=training)
         g0_r_activated = self.relevant_pre_decoder_activation(g0_r)
         g_r = self.relevant_decoder(
             u_r, initial_state=g0_r_activated, training=training)
@@ -246,7 +247,7 @@ class TNDM(ModelLoader, tf.keras.Model):
 
         # Irrelevant
         if self.irr_decoder_dim != self.irr_initial_condition_dim:
-            g0_i = self.irrelevant_dense_pre_decoder(g0_i)
+            g0_i = self.irrelevant_dense_pre_decoder(g0_i, training=training)
         g0_i_activated = self.irrelevant_pre_decoder_activation(g0_i)
         g_i = self.irrelevant_decoder(
             u_i, initial_state=g0_i_activated, training=training)
@@ -271,9 +272,9 @@ class TNDM(ModelLoader, tf.keras.Model):
 
     @tf.function
     def encode(self, neural, training: bool = True):
-        dropped_neural = self.initial_dropout(neural)
+        dropped_neural = self.initial_dropout(neural, training=training)
         encoded = self.encoder(dropped_neural, training=training)[0]
-        dropped_encoded = self.dropout_post_encoder(encoded)
+        dropped_encoded = self.dropout_post_encoder(encoded, training=training)
 
         # Relevant
         mean_r = self.relevant_dense_mean(dropped_encoded, training=training)
