@@ -4,7 +4,7 @@
         "settings": {
             "relevant_factors": 2,
             "irrelevant_factors": 1,
-            "encoded_space": 64,
+            "encoded_dim": 64,
             "max_grad_norm": 200,
             "timestep": 0.01,
             "default_layer_settings": {
