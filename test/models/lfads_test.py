@@ -27,7 +27,7 @@ def save_location():
 def test_dimensionality():
     input_data = np.exp(np.random.randn(10, 100, 50)
                         )  # trials X time X neurons
-    model = LFADS(neural_space=50, layers={'decoder': {'original_cell': True}})
+    model = LFADS(neural_dim=50, layers={'decoder': {'original_cell': True}})
     model.build(input_shape=[None] + list(input_data.shape[1:]))
 
     log_f, (g0_r, r_mean, r_logvar), z, inputs = model.call(
@@ -63,7 +63,7 @@ def test_train_model_quick(save_location):
         update_rate=[-0.05, -0.1, -0.01]
     )
 
-    model = LFADS(neural_space=50, max_grad_norm=200)
+    model = LFADS(neural_dim=50, max_grad_norm=200)
 
     model.build(input_shape=[None] + list(neural_data_train.shape[1:]))
 
@@ -104,7 +104,7 @@ def test_training_regression():
         update_rate=[0, 0.002, 0],
     )
 
-    model = LFADS(neural_space=50, max_grad_norm=200)
+    model = LFADS(neural_dim=50, max_grad_norm=200)
 
     model.build(input_shape=[None] + list(neural_data_train.shape[1:]))
 

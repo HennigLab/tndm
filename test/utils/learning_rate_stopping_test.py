@@ -24,7 +24,7 @@ def test_learning_rate_stopping():
 
     lr = LearningRateStopping(0.001)
 
-    model = TNDM(neural_space=50, behavioural_space=10, max_grad_norm=200)
+    model = TNDM(neural_dim=50, behaviour_dim=10, max_grad_norm=200)
 
     model.build(input_shape=[None] + list(input_data.shape[1:]))
 

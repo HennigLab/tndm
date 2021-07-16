@@ -26,7 +26,7 @@ def save_location():
 def test_dimensionality():
     input_data = np.exp(np.random.randn(10, 100, 50)
                         )  # trials X time X neurons
-    model = TNDM(neural_space=50, behavioural_space=2, layers={'irrelevant_decoder': {'original_cell': True}, 'relevant_decoder': {'original_cell': True}})
+    model = TNDM(neural_dim=50, behaviour_dim=2, layers={'irrelevant_decoder': {'original_cell': True}, 'relevant_decoder': {'original_cell': True}})
     model.build(input_shape=[None] + list(input_data.shape[1:]))
 
     f, b, (g0_r, r_mean, r_logvar), (g0_i, i_mean, i_logvar), (z_r,
@@ -72,7 +72,7 @@ def test_train_model_quick(save_location):
         min_weight=[1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
     )
 
-    model = TNDM(neural_space=50, behaviour_space=2)
+    model = TNDM(neural_dim=50, behaviour_dim=2)
     model.build(input_shape=[None] + list(neural_data_train.shape[1:]))
 
     model.compile(

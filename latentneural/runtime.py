@@ -94,8 +94,8 @@ class Runtime(object):
 
         if model_type == ModelType.TNDM:
             model_settings.update(
-                neural_space=x.shape[-1],
-                behavioural_space=y.shape[-1],
+                neural_dim=x.shape[-1],
+                behaviour_dim=y.shape[-1],
             )
             model = TNDM(
                 **model_settings,
@@ -103,7 +103,7 @@ class Runtime(object):
             )
         elif model_type == ModelType.LFADS:
             model_settings.update(
-                neural_space=x.shape[-1],
+                neural_dim=x.shape[-1],
             )
             model = LFADS(
                 **model_settings,
@@ -258,7 +258,7 @@ class Runtime(object):
 
         # Behaviour likelihood
         if model.with_behaviour:
-            loss_fun = lnl.gaussian_loglike_loss(model.behaviour_sigma, [])
+            loss_fun = lnl.gaussian_loglike_loss([])
             b_like = loss_fun(behaviour, b).numpy() / behaviour.shape[0]
         else:
             b_like = None

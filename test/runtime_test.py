@@ -78,7 +78,7 @@ def test_train_wrap_tndm_different_specs():
         ),
         batch_size=20,
         layers_settings={
-            'encoder': dict(var_max=0.1),
+            'encoder': dict(var_min=0.1),
             'relevant_decoder': dict(original_cell=False),
             'irrelevant_decoder': dict(original_cell=False)
         }
@@ -128,7 +128,7 @@ def test_train_wrap_lfads_different_specs():
         ),
         batch_size=20,
         layers_settings={
-            'encoder': dict(var_max=0.1),
+            'encoder': dict(var_min=0.1),
             'decoder': dict(original_cell=False)
         }
     )

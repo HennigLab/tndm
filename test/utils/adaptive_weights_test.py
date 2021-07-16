@@ -22,7 +22,7 @@ def test_adaptive_weights():
         update_rate=[-0.05, -0.1, -0.01, 0, 0, 0]
     )
 
-    model = TNDM(neural_space=50, behavioural_space=10, max_grad_norm=200)
+    model = TNDM(neural_dim=50, behaviour_dim=10, max_grad_norm=200)
 
     model.build(input_shape=[None] + list(input_data.shape[1:]))
 
@@ -57,7 +57,7 @@ def test_adaptive_weights():
         update_rate=[-0.05, -0.1, -0.01]
     )
 
-    model = LFADS(neural_space=50, max_grad_norm=200)
+    model = LFADS(neural_dim=50, max_grad_norm=200)
 
     model.build(input_shape=[None] + list(input_data.shape[1:]))
 
