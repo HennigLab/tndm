@@ -17,7 +17,7 @@ model:
         type: l2
     encoded_dim: 64
     layers:
-      encoder: {dropout: 0.05, var_max: 0.1, var_min: 0.1}
+      encoder: {dropout: 0.05, var_trainable: false, var_min: 0.1}
       decoder:
         kernel_initializer:
           arguments: {distribution: normal, mode: fan_in, scale: 1.0}

@@ -2,8 +2,8 @@
     "model": {
         "type": "tndm",
         "settings": {
-            "relevant_factors": 2,
-            "irrelevant_factors": 1,
+            "rel_factors": 2,
+            "irr_factors": 1,
             "encoded_dim": 64,
             "max_grad_norm": 200,
             "timestep": 0.01,
@@ -26,7 +26,7 @@
             "layers": {
                 "encoder": {
                     "dropout": 0.05,
-                    "var_max": 0.1,
+                    "var_trainable": false,
                     "var_min": 0.1
                 },
                 "relevant_decoder": {
@@ -76,7 +76,6 @@
                     "original_cell": false
                 },
                 "behavioural_dense": {
-                    "behaviour_sigma": 1,
                     "behaviour_type": "synchronous"
                 }
             }
