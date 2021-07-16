@@ -16,8 +16,10 @@ model:
         arguments: {l: 0.1}
         type: l2
     encoded_dim: 64
+    initial_condition_dim: 32
+    decoder_dim: 128
     layers:
-      encoder: {dropout: 0.05, var_trainable: false, var_min: 0.1}
+      encoder: {dropout: 0.05, var_trainable: true, var_min: 0.1}
       decoder:
         kernel_initializer:
           arguments: {distribution: normal, mode: fan_in, scale: 1.0}
