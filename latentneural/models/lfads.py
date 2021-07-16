@@ -67,17 +67,8 @@ class LFADS(ModelLoader, tf.keras.Model):
         encoder_args: Dict[str, Any] = layers['encoder']
         self.encoded_var_min: float = ArgsParser.get_or_default_and_remove(
             encoder_args, 'var_min', 0.1)
-        self.encoded_var_max: float = ArgsParser.get_or_default_and_remove(
-            encoder_args, 'var_max', 0.1)
-        if self.encoded_var_min < self.encoded_var_max:
-            self.encoded_var_trainable = True
-        else:
-            assert self.encoded_var_min == self.encoded_var_max, ValueError(
-                'Max encoded var %.2f cannot be greater than min encoded var %.2f' % (
-                    self.encoded_var_max,
-                    self.encoded_var_min
-                ))
-            self.encoded_var_trainable = False
+        self.encoded_var_trainable: bool = ArgsParser.get_or_default_and_remove(
+            encoder_args, 'var_trainable', True)
 
         forward_layer = tf.keras.layers.GRU(
             self.encoder_dim, time_major=False, name="EncoderGRUForward", return_state=True, **encoder_args)
@@ -117,7 +108,7 @@ class LFADS(ModelLoader, tf.keras.Model):
 
         # DIMENSIONALITY REDUCTION
         self.dense = tf.keras.layers.Dense(
-            self.factors, name="Dense", activation='tanh', **layers['dense'])
+            self.factors, name="Dense", **layers['dense'])
 
         # NEURAL
         self.neural_dense = tf.keras.layers.Dense(
@@ -162,7 +153,7 @@ class LFADS(ModelLoader, tf.keras.Model):
         # soft-clipping the log-firingrate log(self.timestep) so that the
         # log-likelihood does not return NaN
         # (https://github.com/tensorflow/tensorflow/issues/47019)
-        log_f = tf.tanh(self.neural_dense(z, training=training)) * 10
+        log_f = tf.tanh(self.neural_dense(z, training=training) / 10) * 10
 
         # In order to be able to auto-encode, the dimensions should be the same
         if not self.built:
@@ -180,11 +171,8 @@ class LFADS(ModelLoader, tf.keras.Model):
         mean = self.dense_mean(dropped_encoded, training=training)
 
         if self.encoded_var_trainable:
-            logit_var = tf.exp(self.dense_logvar(
-                dropped_encoded, training=training))
-            var = tf.nn.sigmoid(logit_var) * (self.encoded_var_max -
-                                              self.encoded_var_min) + self.encoded_var_min
-            logvar = tf.math.log(var)
+            logvar = tf.math.log(tf.exp(self.dense_logvar(
+                dropped_encoded, training=training)) + self.encoded_var_min)
         else:
             logvar = tf.zeros_like(mean) + tf.math.log(self.encoded_var_min)
 

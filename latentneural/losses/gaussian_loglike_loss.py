@@ -3,7 +3,7 @@ import tensorflow as tf
 import math as m
 
 
-def gaussian_loglike_loss(behaviour_sigma, arg_idx: List[int]):
+def gaussian_loglike_loss(arg_idx: List[int]):
     means_getter = eval('lambda x: x' + ''.join(['[%d]' % (n) for n in arg_idx]))
     @tf.function
     def loss_fun(y_true, y_pred):
@@ -12,8 +12,8 @@ def gaussian_loglike_loss(behaviour_sigma, arg_idx: List[int]):
         targets = tf.cast(y_true, dtype=tf.float32)
         mse = 0.5 * \
             tf.reduce_sum(tf.keras.backend.square(
-                (targets - b) / tf.math.square(behaviour_sigma)))
+                (targets - b)))
         constant = tf.reduce_sum(tf.ones_like(
-            b) * (tf.math.log(behaviour_sigma) + 0.5 * tf.math.log(2 * m.pi)))
+            b) * (0.5 * tf.math.log(2 * m.pi)))
         return mse + constant
     return loss_fun

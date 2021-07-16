@@ -258,7 +258,7 @@ class Runtime(object):
 
         # Behaviour likelihood
         if model.with_behaviour:
-            loss_fun = lnl.gaussian_loglike_loss(model.behaviour_sigma, [])
+            loss_fun = lnl.gaussian_loglike_loss([])
             b_like = loss_fun(behaviour, b).numpy() / behaviour.shape[0]
         else:
             b_like = None

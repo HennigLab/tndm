@@ -94,17 +94,8 @@ class TNDM(ModelLoader, tf.keras.Model):
         encoder_args: Dict[str, Any] = layers['encoder']
         self.encoded_var_min: float = ArgsParser.get_or_default_and_remove(
             encoder_args, 'var_min', 0.1)
-        self.encoded_var_max: float = ArgsParser.get_or_default_and_remove(
-            encoder_args, 'var_max', 0.1)
-        if self.encoded_var_min < self.encoded_var_max:
-            self.encoded_var_trainable = True
-        else:
-            assert self.encoded_var_min == self.encoded_var_max, ValueError(
-                'Max encoded var %.2f cannot be greater than min encoded var %.2f' % (
-                    self.encoded_var_max,
-                    self.encoded_var_min
-                ))
-            self.encoded_var_trainable = False
+        self.encoded_var_trainable: bool = ArgsParser.get_or_default_and_remove(
+            encoder_args, 'var_trainable', True)
 
         forward_layer = tf.keras.layers.GRU(
             self.encoder_dim, time_major=False, name="EncoderGRUForward", return_state=True, **encoder_args)
@@ -176,14 +167,12 @@ class TNDM(ModelLoader, tf.keras.Model):
 
         # DIMENSIONALITY REDUCTION
         self.rel_factors_dense = tf.keras.layers.Dense(
-            self.rel_factors, name="RelevantFactorsDense", activation='tanh', **layers['rel_factors_dense'])
+            self.rel_factors, name="RelevantFactorsDense", **layers['rel_factors_dense'])
         self.irr_factors_dense = tf.keras.layers.Dense(
-            self.irr_factors, name="IrrelevantFactorsDense", activation='tanh', **layers['irr_factors_dense'])
+            self.irr_factors, name="IrrelevantFactorsDense", **layers['irr_factors_dense'])
 
         # BEHAVIOURAL
         behavioural_dense_args: Dict[str, Any] = layers['behavioural_dense']
-        self.behaviour_sigma: float = float(ArgsParser.get_or_default_and_remove(
-            behavioural_dense_args, 'behaviour_sigma', 1.0))
         self.behaviour_type: str = str(ArgsParser.get_or_default_and_remove(
             behavioural_dense_args, 'behaviour_type', 'causal'))
         if self.behaviour_type == 'causal':
@@ -228,6 +217,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         log_f, b, (z_r, z_i) = self.decode(
             g0_r, g0_i, inputs, training=training)
         return log_f, b, (g0_r, mean_r, logvar_r), (g0_i, mean_i, logvar_i), (z_r, z_i), inputs
+        # TODO: change outputs to flat
 
     @tf.function
     def decode(self, g0_r, g0_i, neural, training: bool = True):
@@ -240,7 +230,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         # Relevant
         if self.rel_decoder_dim != self.rel_initial_condition_dim:
             g0_r = self.relevant_dense_pre_decoder(g0_r, training=training)
-        g0_r_activated = self.relevant_pre_decoder_activation(g0_r)
+        g0_r_activated = self.relevant_pre_decoder_activation(g0_r) # Not in the original
         g_r = self.relevant_decoder(
             u_r, initial_state=g0_r_activated, training=training)
         z_r = self.rel_factors_dense(g_r, training=training)
@@ -248,7 +238,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         # Irrelevant
         if self.irr_decoder_dim != self.irr_initial_condition_dim:
             g0_i = self.irrelevant_dense_pre_decoder(g0_i, training=training)
-        g0_i_activated = self.irrelevant_pre_decoder_activation(g0_i)
+        g0_i_activated = self.irrelevant_pre_decoder_activation(g0_i) # Not in the original
         g_i = self.irrelevant_decoder(
             u_i, initial_state=g0_i_activated, training=training)
         z_i = self.irr_factors_dense(g_i, training=training)
@@ -261,7 +251,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         # soft-clipping the log-firingrate log(self.timestep) so that the
         # log-likelihood does not return NaN
         # (https://github.com/tensorflow/tensorflow/issues/47019)
-        log_f = tf.tanh(self.neural_dense(z, training=training)) * 10
+        log_f = tf.tanh(self.neural_dense(z, training=training) / 10) * 10
 
         # In order to be able to auto-encode, the dimensions should be the same
         if not self.built:
@@ -271,7 +261,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         return log_f, b, (z_r, z_i)
 
     @tf.function
-    def encode(self, neural, training: bool = True):
+    def encode(self, neural, training: bool=True):
         dropped_neural = self.initial_dropout(neural, training=training)
         encoded = self.encoder(dropped_neural, training=training)[0]
         dropped_encoded = self.dropout_post_encoder(encoded, training=training)
@@ -279,11 +269,8 @@ class TNDM(ModelLoader, tf.keras.Model):
         # Relevant
         mean_r = self.relevant_dense_mean(dropped_encoded, training=training)
         if self.encoded_var_trainable:
-            logit_var_r = tf.exp(self.relevant_dense_logvar(
-                dropped_encoded, training=training))
-            var_r = tf.nn.sigmoid(
-                logit_var_r) * (self.encoded_var_max - self.encoded_var_min) + self.encoded_var_min
-            logvar_r = tf.math.log(var_r)
+            logvar_r = tf.math.log(tf.exp(self.relevant_dense_logvar(
+                dropped_encoded, training=training)) + self.encoded_var_min)
         else:
             logvar_r = tf.zeros_like(mean_r) + tf.math.log(self.encoded_var_min)
         g0_r = self.relevant_sampling(
@@ -292,11 +279,8 @@ class TNDM(ModelLoader, tf.keras.Model):
         # Irrelevant
         mean_i = self.irrelevant_dense_mean(dropped_encoded, training=training)
         if self.encoded_var_trainable:
-            logit_var_i = tf.exp(self.irrelevant_dense_logvar(
-                dropped_encoded, training=training))
-            var_i = tf.nn.sigmoid(
-                logit_var_i) * (self.encoded_var_max - self.encoded_var_min) + self.encoded_var_min
-            logvar_i = tf.math.log(var_i)
+            logvar_i = tf.math.log(tf.exp(self.irrelevant_dense_logvar(
+                dropped_encoded, training=training)) + self.encoded_var_min)
         else:
             logvar_i = tf.zeros_like(mean_i) + tf.math.log(self.encoded_var_min)
         g0_i = self.irrelevant_sampling(
@@ -308,7 +292,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         super(TNDM, self).compile(
             loss=[
                 poisson_loglike_loss(self.timestep, args_idx=([0,0], [0,5])),
-                gaussian_loglike_loss(self.behaviour_sigma, arg_idx=[0,1]),
+                gaussian_loglike_loss(arg_idx=[0,1]),
                 gaussian_kldiv_loss(self.prior_variance, args_idx=([0,2,1], [0,2,2])),
                 gaussian_kldiv_loss(self.prior_variance, args_idx=([0,3,1], [0,3,2])),
                 covariance_loss(self.disentanglement_batches, args_idx=([0,2,1], [0,2,2], [0,3,1], [0,3,2])),
@@ -354,7 +338,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         x, y, sample_weight = tf.keras.utils.unpack_x_y_sample_weight(data)
         # Run forward pass.
         with tf.GradientTape() as tape:
-            y_pred = (self(x, training=True), self.losses)
+            y_pred = (self(x, training=True), self.losses) # self.losses contains L2 losses
 
             neural_loglike_loss, behavioural_loglike_loss, relevant_kldiv_loss, irrelevant_kldiv_loss, independence_loss, reg_loss = \
                 [func(y, y_pred) for func in self.compiled_loss._losses]
@@ -472,7 +456,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         # data when a `tf.data.Dataset` is provided.
         x, y, sample_weight = tf.keras.utils.unpack_x_y_sample_weight(data)
         # Run forward pass.
-        y_pred = (self(x, training=False), self.losses)
+        y_pred = (self(x, training=False), self.losses) # self.losses contains L2 losses
         neural_loglike_loss, behavioural_loglike_loss, relevant_kldiv_loss, irrelevant_kldiv_loss, independence_loss, reg_loss = \
             [func(y, y_pred) for func in self.compiled_loss._losses]
         loss = self.loss_weights[0] * neural_loglike_loss + \
