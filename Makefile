@@ -16,6 +16,10 @@ jupyter-add-kernel:
 download-kia:
 	--wget -O latentneural/data/storage/kia/metadata.json https://www.dropbox.com/s/p69wegqo4catn8f/metadata.json?dl=1
 	--wget -O latentneural/data/storage/kia/dataset.h5 https://www.dropbox.com/s/bovcnjy2f40sgpk/dataset.h5?dl=1
+	--wget -O latentneural/data/storage/kia/cross-validation.zip https://www.dropbox.com/s/i48jv8qu34gbzgk/cross-validation.zip?dl=1
+	--unzip -o latentneural/data/storage/kia/cross-validation.zip -d latentneural/data/storage/kia
+	--rm latentneural/data/storage/kia/cross-validation.zip
+	--rm -r latentneural/data/storage/kia/__MACOSX
 
 download-lorenz:
 	--mkdir latentneural/data/storage/lorenz/20210604T155502
@@ -30,6 +34,9 @@ download-lorenz:
 	--wget -O latentneural/data/storage/lorenz/grid.zip https://www.dropbox.com/s/msdf0dfi9for977/grid.zip?dl=1
 	--unzip latentneural/data/storage/lorenz/grid.zip -d latentneural/data/storage/lorenz/ -o
 	--rm latentneural/data/storage/lorenz/grid.zip
+	--wget -O latentneural/data/storage/lorenz/grid/results_old.zip https://www.dropbox.com/s/6vycfvy3ywzart1/results_old.zip?dl=1
+	--unzip -o latentneural/data/storage/lorenz/grid/results_old.zip -d latentneural/data/storage/lorenz/grid
+	--rm latentneural/data/storage/lorenz/grid/results_old.zip
 
 tensorboard-view:
 	--tensorboard dev upload --logdir latentneural/data/storage/lorenz/20210610T215300/results/lfads_log
