@@ -175,6 +175,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         behavioural_dense_args: Dict[str, Any] = layers['behavioural_dense']
         self.behaviour_type: str = str(ArgsParser.get_or_default_and_remove(
             behavioural_dense_args, 'behaviour_type', 'causal'))
+        logger.info('Behaviour type is %s' % (self.behaviour_type))
         if self.behaviour_type == 'causal':
             self.behavioural_dense = MaskedDense(
                 self.behaviour_dim, name="CausalBehaviouralDense", **behavioural_dense_args)
