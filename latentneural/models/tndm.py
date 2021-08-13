@@ -252,7 +252,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         # soft-clipping the log-firingrate log(self.timestep) so that the
         # log-likelihood does not return NaN
         # (https://github.com/tensorflow/tensorflow/issues/47019)
-        log_f = tf.tanh(self.neural_dense(z, training=training) / 10) * 10
+        log_f = tf.tanh(self.neural_dense(z, training=training) / 100) * 100
 
         # In order to be able to auto-encode, the dimensions should be the same
         if not self.built:
