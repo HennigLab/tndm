@@ -14,12 +14,17 @@ jupyter-add-kernel:
 	--python -m ipykernel install --user --name=latentneural
 
 download-kia:
-	--wget -O latentneural/data/storage/kia/metadata.json https://www.dropbox.com/s/p69wegqo4catn8f/metadata.json?dl=1
-	--wget -O latentneural/data/storage/kia/dataset.h5 https://www.dropbox.com/s/bovcnjy2f40sgpk/dataset.h5?dl=1
+	# --wget -O latentneural/data/storage/kia/metadata.json https://www.dropbox.com/s/p69wegqo4catn8f/metadata.json?dl=1
+	# --wget -O latentneural/data/storage/kia/dataset.h5 https://www.dropbox.com/s/bovcnjy2f40sgpk/dataset.h5?dl=1
 	--wget -O latentneural/data/storage/kia/cross-validation.zip https://www.dropbox.com/s/i48jv8qu34gbzgk/cross-validation.zip?dl=1
 	--unzip -o latentneural/data/storage/kia/cross-validation.zip -d latentneural/data/storage/kia
 	--rm latentneural/data/storage/kia/cross-validation.zip
 	--rm -r latentneural/data/storage/kia/__MACOSX
+	--wget -O latentneural/data/storage/kia/cross-validation-emg.zip https://www.dropbox.com/s/qzlp0qofms9jlwe/cross-validation-emg.zip?dl=1
+	--unzip -o latentneural/data/storage/kia/cross-validation-emg.zip -d latentneural/data/storage/kia
+	--rm latentneural/data/storage/kia/cross-validation-emg.zip
+	--rm -r latentneural/data/storage/kia/__MACOSX
+	--wget -O notebooks/results/emg_data/emg_cleansing.pdf https://www.dropbox.com/s/n1lxscl8dnb4550/emg_cleansing.pdf?dl=1
 
 download-lorenz:
 	--mkdir latentneural/data/storage/lorenz/20210604T155502
