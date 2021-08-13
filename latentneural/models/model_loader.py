@@ -18,7 +18,7 @@ class ModelLoader(ABC):
         
         model_settings, layers_settings = Parser.parse_model_settings(settings)
         model = model_class(**model_settings, 
-            layers_settings=layers_settings)
+            layers=layers_settings)
 
         model.load_weights(os.path.join(location, 'weights'))
         return model

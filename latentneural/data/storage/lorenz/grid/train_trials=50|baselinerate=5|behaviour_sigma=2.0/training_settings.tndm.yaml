@@ -1,0 +1,149 @@
+data:
+  behavioural_keys:
+    test: test_behaviours
+    train: train_behaviours
+    validation: valid_behaviours
+  dataset_filename: dataset.h5
+  directory: ./latentneural/data/storage/lorenz/grid/train_trials=50|baselinerate=5|behaviour_sigma=2.0
+  latent_keys:
+    test: test_latent
+    train: train_latent
+    validation: valid_latent
+  metadata_filename: metadata.json
+  neural_keys:
+    test: test_data
+    train: train_data
+    validation: valid_data
+model:
+  settings:
+    full_logs: False
+    default_layer_settings:
+      kernel_initializer:
+        arguments:
+          distribution: normal
+          mode: fan_in
+          scale: 1.0
+        type: variance_scaling
+      kernel_regularizer:
+        arguments:
+          l: 0.1
+        type: l2
+    encoded_dim: 64
+    rel_factors: 2
+    irr_factors: 1
+    dropout: 0.15
+    layers:
+      behavioural_dense:
+        behaviour_type: synchronous
+        kernel_initializer:
+          arguments:
+            distribution: normal
+            mode: fan_in
+            scale: 1.0
+          type: variance_scaling
+        kernel_regularizer:
+          arguments:
+            l: 0.01
+          type: l2
+      relevant_decoder:
+        kernel_initializer:
+          arguments:
+            distribution: normal
+            mode: fan_in
+            scale: 1.0
+          type: variance_scaling
+        kernel_regularizer:
+          arguments:
+            l: 3
+          type: l2
+        original_cell: false
+        recurrent_regularizer:
+          arguments:
+            l: 3
+          type: l2
+      irrelevant_decoder:
+        kernel_initializer:
+          arguments:
+            distribution: normal
+            mode: fan_in
+            scale: 1.0
+          type: variance_scaling
+        kernel_regularizer:
+          arguments:
+            l: 3
+          type: l2
+        original_cell: false
+        recurrent_regularizer:
+          arguments:
+            l: 3
+          type: l2
+      encoder:
+        kernel_initializer:
+          arguments:
+            distribution: normal
+            mode: fan_in
+            scale: 1.0
+          type: variance_scaling
+        kernel_regularizer:
+          arguments:
+            l: 0.1
+          type: l2
+        var_trainable: false
+        var_min: 0.1
+    max_grad_norm: 200
+    timestep: 0.01
+  type: tndm
+output:
+  directory: ./latentneural/data/storage/lorenz/grid/train_trials=50|baselinerate=5|behaviour_sigma=2.0/results_tndm
+runtime:
+  batch_size: 16
+  epochs: 10000
+  learning_rate:
+    factor: 0.95
+    initial: 0.01
+    min_lr: 1.0e-05
+    patience: 30
+    terminating: 1.0e-04
+  optimizer:
+    arguments:
+      beta_1: 0.9
+      beta_2: 0.999
+      epsilon: 0.0001
+    type: adam
+  weights:
+    initial:
+    - 1.0
+    - 0.1
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    max_weight:
+    - 1.0
+    - 0.1
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    min_weight:
+    - 1.0
+    - 0.1
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    update_rate:
+    - 0.0
+    - 0.0
+    - 0.0002
+    - 0.0002
+    - 0.0002
+    - 0.0002
+    update_start:
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+seed: 0
