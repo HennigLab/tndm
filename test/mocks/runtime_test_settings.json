@@ -86,10 +86,10 @@
         }
     },
     "output": {
-        "directory": "test/mocks/runtime_test_outputs"
+        "directory": "./test/mocks/lorenz/out"
     },
     "data": {
-        "directory": "./latentneural/data/storage/lorenz/20210610T215300",
+        "directory": "./test/mocks/lorenz/",
         "dataset_filename": "dataset.h5",
         "metadata_filename": "metadata.json",
         "neural_keys": {

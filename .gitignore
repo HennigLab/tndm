@@ -128,25 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Generated data & trained models
+# VSCode
 .DS_Store
 .vscode/
-notebooks/lfads_jax_tutorial/generated/
-notebooks/vae_quickstart/
-notebooks/lfads_jax_tutorial/
-latentneural/data/storage/**/metadata.json
-latentneural/data/storage/**/dataset.h5
-latentneural/data/storage/**/results*
-latentneural/data/storage/**/old
-latentneural/data/storage/**/discarded*
-latentneural/data/storage/**/old_results
-latentneural/data/storage/**/results_old
-latentneural/data/storage/**/results.zip
-latentneural/data/storage/lorenz/20210610T215300/results_new_lfads/*
-# latentneural/legacy
-latentneural/data/storage/**/*.v2
-latentneural/data/storage/**/*.profile-empty
-latentneural/data/storage/**/plugins/
-test/mocks/runtime_test_outputs/
-latentneural/data/storage/lorenz/grid/*/training_settings.yaml
-notebooks/deliverables/results
+test/mocks/lorenz/out

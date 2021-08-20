@@ -9,8 +9,8 @@ here = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(here, 'README.md'), "r") as f:
     long_description = f.read()
 
-# with open(os.path.join(here, 'requirements.txt'), "r") as f:
-#     install_requires = f.readlines()
+with open(os.path.join(here, 'requirements.txt'), "r") as f:
+    install_requires = f.readlines()
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.

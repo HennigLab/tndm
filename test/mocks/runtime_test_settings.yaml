@@ -1,7 +1,7 @@
 data:
   behavioural_keys: {test: test_behaviours, train: train_behaviours, validation: valid_behaviours}
   dataset_filename: dataset.h5
-  directory: ./latentneural/data/storage/lorenz/20210610T215300
+  directory: ./test/mocks/lorenz/
   latent_keys: {test: test_latent, train: train_latent, validation: valid_latent}
   metadata_filename: metadata.json
   neural_keys: {test: test_data, train: train_data, validation: valid_data}
@@ -35,7 +35,7 @@ model:
     factors: 3
     timestep: 0.01
   type: lfads
-output: {directory: test/mocks/runtime_test_outputs}
+output: {directory: ./test/mocks/lorenz/out}
 runtime:
   batch_size: 32
   epochs: 2

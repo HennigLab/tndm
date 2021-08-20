@@ -118,7 +118,7 @@ def test_training_regression():
         y=None,
         callbacks=[adaptive_weights],
         shuffle=True,
-        epochs=500,
+        epochs=10,
         validation_data=(
             neural_data_val,
             None))
