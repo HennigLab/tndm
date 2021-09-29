@@ -132,3 +132,17 @@ dmypy.json
 .DS_Store
 .vscode/
 test/mocks/lorenz/out
+tndm/data/storage/**/metadata.json
+tndm/data/storage/**/dataset.h5
+tndm/data/storage/**/results*
+tndm/data/storage/**/old
+tndm/data/storage/**/discarded*
+tndm/data/storage/**/old_results
+tndm/data/storage/**/results_old
+tndm/data/storage/**/results.zip
+tndm/data/storage/lorenz/20210610T215300/results_new_lfads/*
+tndm/data/storage/**/*.v2
+tndm/data/storage/**/*.profile-empty
+tndm/data/storage/**/plugins/
+test/mocks/runtime_test_outputs/
+tndm/data/storage/lorenz/grid/*/training_settings.yaml
