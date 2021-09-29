@@ -29,6 +29,7 @@ jobs:
         python -m mypy --ignore-missing-imports --follow-imports=silent --show-column-numbers --module tndm
     - name: Download data      
       run: |
+        mkdir tndm/data/storage
         mkdir tndm/data/storage/lorenz
         mkdir tndm/data/storage/lorenz/20210610T215300
         wget -O tndm/data/storage/lorenz/20210610T215300/metadata.json https://www.dropbox.com/s/0810h1ozhiyasmm/metadata.json?dl=1
