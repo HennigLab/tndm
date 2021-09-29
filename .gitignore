@@ -146,4 +146,4 @@ tndm/data/storage/**/*.profile-empty
 tndm/data/storage/**/plugins/
 test/mocks/runtime_test_outputs/
 tndm/data/storage/lorenz/grid/*/training_settings.yaml
-latentneural/data/storage/train/
+tndm/data/storage/train/
