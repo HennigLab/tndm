@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from latentneural.utils.args_parser import ArgsParser
+from tndm.utils.args_parser import ArgsParser
 import tensorflow as tf
 from typing import List, Tuple, Optional, Dict, Any, Union
 from enum import Enum
@@ -17,9 +17,9 @@ from datetime import datetime
 import getpass
 import socket
 
-from latentneural.utils import AdaptiveWeights, logger, CustomEncoder
-from latentneural.data import DataManager
-import latentneural.losses as lnl
+from tndm.utils import AdaptiveWeights, logger, CustomEncoder
+from tndm.data import DataManager
+import tndm.losses as lnl
 
 
 class ModelType(Enum):

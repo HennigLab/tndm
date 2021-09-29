@@ -2,8 +2,8 @@ import tensorflow as tf
 import numpy as np
 import pytest
 
-from latentneural import TNDM, LFADS
-from latentneural.utils import LearningRateStopping, AdaptiveWeights
+from tndm import TNDM, LFADS
+from tndm.utils import LearningRateStopping, AdaptiveWeights
 
 
 @pytest.mark.unit

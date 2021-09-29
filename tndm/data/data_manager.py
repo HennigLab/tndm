@@ -6,7 +6,7 @@ from datetime import datetime
 from copy import deepcopy
 import json
 
-from latentneural.utils import logger, CustomEncoder
+from tndm.utils import logger, CustomEncoder
 
 
 class DataManager(object):

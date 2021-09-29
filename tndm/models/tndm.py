@@ -6,9 +6,9 @@ import tensorflow_probability as tfp
 import math as m
 from collections import defaultdict
 
-from latentneural.utils import ArgsParser, clean_layer_name, logger
-from latentneural.layers import GaussianSampling, GeneratorGRU, MaskedDense
-from latentneural.losses import gaussian_kldiv_loss, poisson_loglike_loss, regularization_loss, gaussian_loglike_loss, covariance_loss
+from tndm.utils import ArgsParser, clean_layer_name, logger
+from tndm.layers import GaussianSampling, GeneratorGRU, MaskedDense
+from tndm.losses import gaussian_kldiv_loss, poisson_loglike_loss, regularization_loss, gaussian_loglike_loss, covariance_loss
 from .model_loader import ModelLoader
 
 

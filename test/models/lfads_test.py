@@ -3,8 +3,8 @@ import numpy as np
 import pytest
 import os
 
-from latentneural import LFADS
-from latentneural.utils import AdaptiveWeights, upsert_empty_folder, remove_folder
+from tndm import LFADS
+from tndm.utils import AdaptiveWeights, upsert_empty_folder, remove_folder
 
 
 @pytest.fixture(scope='module', autouse=True)

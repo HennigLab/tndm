@@ -5,9 +5,9 @@ from typing import Dict, Any
 from collections import defaultdict
 import json
 
-from latentneural.utils import ArgsParser, clean_layer_name, logger
-from latentneural.layers import GaussianSampling, GeneratorGRU
-from latentneural.losses import gaussian_kldiv_loss, poisson_loglike_loss, regularization_loss
+from tndm.utils import ArgsParser, clean_layer_name, logger
+from tndm.layers import GaussianSampling, GeneratorGRU
+from tndm.losses import gaussian_kldiv_loss, poisson_loglike_loss, regularization_loss
 from .model_loader import ModelLoader
 
 

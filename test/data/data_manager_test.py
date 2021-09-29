@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 import os
 
-from latentneural.data import DataManager
-from latentneural.utils import remove_folder, upsert_empty_folder
+from tndm.data import DataManager
+from tndm.utils import remove_folder, upsert_empty_folder
 
 
 @pytest.fixture(scope='module')

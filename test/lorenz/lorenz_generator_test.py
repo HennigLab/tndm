@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from latentneural.lorenz.initial_conditions import uniform
-from latentneural.lorenz import LorenzGenerator, bo
+from tndm.lorenz.initial_conditions import uniform
+from tndm.lorenz import LorenzGenerator, bo
 
 
 @pytest.mark.unit

@@ -2,7 +2,7 @@ import tensorflow as tf
 from typing import List, Optional, Any
 import numpy as np
 
-from latentneural.utils import ArgsParser
+from tndm.utils import ArgsParser
 
 
 class LearningRateStopping(tf.keras.callbacks.Callback):

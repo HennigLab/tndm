@@ -18,35 +18,27 @@ jobs:
         python-version: 3.8
     - name: Install dependencies
       run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        $CONDA/bin/conda env update --file environment.yml --name latentneural
-        $CONDA/bin/conda init bash
-    - name: H5PY Fix
-      run: |
-        # Workaround for h5py installation
-        source $CONDA/etc/profile.d/conda.sh
-        conda activate latentneural
-        pip uninstall h5py -y
-        pip install h5py
+        python3 -m venv .venv
+        source .venv/bin/activate
+        pip3 install --upgrade -r ./requirements.txt
+        pip3 install --upgrade mypy pytest pytest-cov
     - name: Lint with mypy
       run: |
         # stop the build if there are Python syntax errors or undefined names
-        source $CONDA/etc/profile.d/conda.sh
-        conda activate latentneural
-        mypy --ignore-missing-imports --follow-imports=silent --show-column-numbers --module latentneural
+        source .venv/bin/activate
+        python -m mypy --ignore-missing-imports --follow-imports=silent --show-column-numbers --module tndm
     - name: Download data      
       run: |
-        mkdir latentneural/data/storage/lorenz/20210610T215300
-        wget -O latentneural/data/storage/lorenz/20210610T215300/metadata.json https://www.dropbox.com/s/0810h1ozhiyasmm/metadata.json?dl=1
-        wget -O latentneural/data/storage/lorenz/20210610T215300/dataset.h5 https://www.dropbox.com/s/1xrfbh78de3amyd/dataset.h5?dl=1
-        wget -O latentneural/data/storage/lorenz/20210610T215300/results.zip https://www.dropbox.com/s/yk8xc4ba7mw3a6s/results.zip?dl=1
-        unzip latentneural/data/storage/lorenz/20210610T215300/results.zip -d latentneural/data/storage/lorenz/20210610T215300
-        rm latentneural/data/storage/lorenz/20210610T215300/results.zip
+        mkdir tndm/data/storage/lorenz/20210610T215300
+        wget -O tndm/data/storage/lorenz/20210610T215300/metadata.json https://www.dropbox.com/s/0810h1ozhiyasmm/metadata.json?dl=1
+        wget -O tndm/data/storage/lorenz/20210610T215300/dataset.h5 https://www.dropbox.com/s/1xrfbh78de3amyd/dataset.h5?dl=1
+        wget -O tndm/data/storage/lorenz/20210610T215300/results.zip https://www.dropbox.com/s/yk8xc4ba7mw3a6s/results.zip?dl=1
+        unzip tndm/data/storage/lorenz/20210610T215300/results.zip -d tndm/data/storage/lorenz/20210610T215300
+        rm tndm/data/storage/lorenz/20210610T215300/results.zip
     - name: Test with pytest
       run: |
-        source $CONDA/etc/profile.d/conda.sh
-        conda activate latentneural
-        pytest -v -m "not slow" --cov=latentneural --cov-report=xml --cov-config=.coveragerc
+        source .venv/bin/activate
+        pytest -v -m "not slow" --cov=tndm --cov-report=xml --cov-config=.coveragerc
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:

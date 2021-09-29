@@ -5,8 +5,8 @@ from abc import ABC, abstractmethod, abstractstaticmethod
 import os
 from typing import Dict, Any
 
-from latentneural.parser import Parser
-from latentneural.utils import CustomEncoder, upsert_empty_folder
+from tndm.parser import Parser
+from tndm.utils import CustomEncoder, upsert_empty_folder
 
 
 class ModelLoader(ABC):

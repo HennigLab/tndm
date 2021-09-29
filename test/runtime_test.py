@@ -6,8 +6,8 @@ import runpy
 from copy import deepcopy
 
 
-from latentneural.runtime import Runtime, ModelType
-from latentneural.utils import AdaptiveWeights, remove_folder, upsert_empty_folder
+from tndm.runtime import Runtime, ModelType
+from tndm.utils import AdaptiveWeights, remove_folder, upsert_empty_folder
 
 
 @pytest.fixture(scope='module')
@@ -71,7 +71,7 @@ def test_train_wrap_tndm_different_specs():
                     100, 100, 4))),
         val_dataset=None,
         adaptive_lr=dict(factor=0.95, patience=10, min_lr=1e-5),
-        logdir=os.path.join('.', 'latentneural', 'data', 'storage'),
+        logdir=os.path.join('.', 'tndm', 'data', 'storage'),
         adaptive_weights=AdaptiveWeights(
             initial=[1, 0, 0, 0, 1, 0],
             update_rate=[0, 0.002, 0.002, 0, 0, 0],
@@ -121,7 +121,7 @@ def test_train_wrap_lfads_different_specs():
         train_dataset=np.random.binomial(1, 0.5, (100, 100, 50)).astype(float),
         val_dataset=None,
         adaptive_lr=dict(factor=0.95, patience=10, min_lr=1e-5),
-        logdir=os.path.join('.', 'latentneural', 'data', 'storage'),
+        logdir=os.path.join('.', 'tndm', 'data', 'storage'),
         adaptive_weights=AdaptiveWeights(
             initial=[1, 0, 0],
             update_rate=[0, 0.002, 0.002],
@@ -144,5 +144,5 @@ def test_running_lfads_from_yaml(yaml_filename):
 @pytest.mark.unit
 def test_running_from_command_line(json_filename, cmd_line_args):
     if cmd_line_args:
-        runpy.run_module('latentneural', run_name='__main__')
+        runpy.run_module('tndm', run_name='__main__')
     

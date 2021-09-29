@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from latentneural.utils import upsert_empty_folder, empty_folder, remove_folder
+from tndm.utils import upsert_empty_folder, empty_folder, remove_folder
 
 
 @pytest.fixture(scope='function')

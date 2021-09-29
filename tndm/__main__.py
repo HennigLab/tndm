@@ -3,11 +3,11 @@ from os.path import isfile
 import sys
 import os
 
-from latentneural.runtime import Runtime
+from tndm.runtime import Runtime
 
 
 HELP_MSG = """
-Usage: python latentneural [command] [file]
+Usage: python tndm [command] [file]
         
 The file contains the experiment settings.
 
@@ -27,7 +27,7 @@ File %s not found.
 """
 
 FILE_NOT_PROVIDED_MSG = """
-File not provided. Usage: python latentneural [command] [file]
+File not provided. Usage: python tndm [command] [file]
 """
 
 if __name__ == "__main__":
