@@ -30,7 +30,7 @@ class DataManager(object):
 
     @staticmethod
     def split_dataset(
-            data: np.ndarray, train_pct: float = None, valid_pct: float = None, test_pct: float = None) -> Tuple[
+            data: np.ndarray, train_pct: float = None, valid_pct: float = None, test_pct: float = None, seed: int = 0) -> Tuple[
             np.ndarray, np.ndarray, np.ndarray]:
         """Split Dataset
 
@@ -41,6 +41,7 @@ class DataManager(object):
             train_pct (float, optional): percentage of records used for training. Defaults to None.
             valid_pct (float, optional): percentage of records used for validation. Defaults to None.
             test_pct (float, optional): percentage of records used for testing. Defaults to None.
+            seed (int, optional): random seed for shuffling. Defaults to 0.
 
         Returns:
             Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]: training dataset,
@@ -77,6 +78,8 @@ class DataManager(object):
                 test_pct /= tot_pct
 
         index = np.arange(data.shape[0])
+        print('seed ',seed)
+        np.random.seed(seed)
         np.random.shuffle(index)
         train_i, validation_i, test_i = np.split(index,
                                                  [int(train_pct * data.shape[0]), int((valid_pct + train_pct) * data.shape[0])])
@@ -91,7 +94,7 @@ class DataManager(object):
                       noisless_behaviour_data: Optional[np.ndarray] = None, rates_data: Optional[np.ndarray] = None,
                       latent_data: Optional[np.ndarray] = None, time_data: Optional[np.ndarray] = None,
                       behaviour_weights: Optional[np.ndarray] = None, neural_weights: Optional[np.ndarray] = None,
-                      train_pct: float = None, valid_pct: float = None, test_pct: float = None) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+                      train_pct: float = None, valid_pct: float = None, test_pct: float = None, seed: int = 0) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Builds the dataset
 
         Dimensions:
@@ -120,6 +123,7 @@ class DataManager(object):
             train_pct (float, optional): percentage of training data. Defaults to None.
             valid_pct (float, optional): percentage of validation data. Defaults to None.
             test_pct (float, optional): percentage of test data. Defaults to None.
+            seed (int, optional): random seed for shuffling. Defaults to 0.
 
         Returns:
             Tuple[Dict[str, Any], Dict[str, Any]]: Dataset as key-value pair and settings dict.
@@ -127,13 +131,13 @@ class DataManager(object):
         ######## STANDARD PROPERTIES ########
         data_dict: Dict[str, Any] = {}
 
-        data_dict['train_data'], data_dict['valid_data'], data_dict['test_data'], train_i, valid_i, test_i = \
+        data_dict['train_data'], data_dict['valid_data'], data_dict['test_data'], data_dict['train_i'], data_dict['valid_i'], data_dict['test_i'] = \
             DataManager.split_dataset(
-                neural_data, train_pct=train_pct, valid_pct=valid_pct, test_pct=test_pct)
+                neural_data, train_pct=train_pct, valid_pct=valid_pct, test_pct=test_pct, seed=seed)
 
         data_dict['train_behaviours'], data_dict['valid_behaviours'], data_dict['test_behaviours'] = \
             DataManager.apply_split(behaviour_data, indices=[
-                                    train_i, valid_i, test_i])
+                                    data_dict['train_i'], data_dict['valid_i'], data_dict['test_i']])
 
         settings_out = deepcopy(settings)
         settings_out.update({
@@ -146,17 +150,17 @@ class DataManager(object):
         if noisless_behaviour_data is not None:
             data_dict['train_behaviours_noiseless'], data_dict['valid_behaviours_noiseless'], data_dict['test_behaviours_noiseless'] = \
                 DataManager.apply_split(noisless_behaviour_data, indices=[
-                                        train_i, valid_i, test_i])
+                                        data_dict['train_i'], data_dict['valid_i'], data_dict['test_i']])
 
         if rates_data is not None:
             data_dict['train_rates'], data_dict['valid_rates'], data_dict['test_rates'] = \
                 DataManager.apply_split(rates_data, indices=[
-                                        train_i, valid_i, test_i])
+                                        data_dict['train_i'], data_dict['valid_i'], data_dict['test_i']])
 
         if latent_data is not None:
             data_dict['train_latent'], data_dict['valid_latent'], data_dict['test_latent'] = \
                 DataManager.apply_split(latent_data, indices=[
-                                        train_i, valid_i, test_i])
+                                        data_dict['train_i'], data_dict['valid_i'], data_dict['test_i']])
 
         if time_data is not None:
             data_dict['time_data'] = time_data
