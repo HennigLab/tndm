@@ -13,7 +13,8 @@ def gaussian_loglike_loss(arg_idx: List[int]):
         mse = 0.5 * \
             tf.reduce_sum(tf.keras.backend.square(
                 (targets - b)))
-        constant = tf.reduce_sum(tf.ones_like(
-            b) * (0.5 * tf.math.log(2 * m.pi)))
-        return mse + constant
+#         constant = tf.reduce_sum(tf.ones_like(
+#             b) * (0.5 * tf.math.log(2 * m.pi)))
+#         return mse + constant
+        return mse
     return loss_fun
