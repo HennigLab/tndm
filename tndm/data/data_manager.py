@@ -78,7 +78,7 @@ class DataManager(object):
                 test_pct /= tot_pct
 
         index = np.arange(data.shape[0])
-        print('seed ',seed)
+
         np.random.seed(seed)
         np.random.shuffle(index)
         train_i, validation_i, test_i = np.split(index,
