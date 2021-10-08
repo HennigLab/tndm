@@ -16,6 +16,9 @@ jobs:
       uses: actions/setup-python@master
       with:
         python-version: 3.8
+        lfs: true
+    - name: Pull LFS objects
+      run: git lfs pull
     - name: Install dependencies
       run: |
         python3 -m venv .venv
@@ -27,16 +30,6 @@ jobs:
         # stop the build if there are Python syntax errors or undefined names
         source .venv/bin/activate
         python -m mypy --ignore-missing-imports --follow-imports=silent --show-column-numbers --module tndm
-    - name: Download data      
-      run: |
-        mkdir tndm/data/storage
-        mkdir tndm/data/storage/lorenz
-        mkdir tndm/data/storage/lorenz/20210610T215300
-        wget -O tndm/data/storage/lorenz/20210610T215300/metadata.json https://www.dropbox.com/s/0810h1ozhiyasmm/metadata.json?dl=1
-        wget -O tndm/data/storage/lorenz/20210610T215300/dataset.h5 https://www.dropbox.com/s/1xrfbh78de3amyd/dataset.h5?dl=1
-        wget -O tndm/data/storage/lorenz/20210610T215300/results.zip https://www.dropbox.com/s/yk8xc4ba7mw3a6s/results.zip?dl=1
-        unzip tndm/data/storage/lorenz/20210610T215300/results.zip -d tndm/data/storage/lorenz/20210610T215300
-        rm tndm/data/storage/lorenz/20210610T215300/results.zip
     - name: Test with pytest
       run: |
         source .venv/bin/activate

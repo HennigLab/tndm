@@ -1,5 +1,4 @@
 # Basic .gitattributes for a python repo.
-
 # Source files
 # ============
 *.pxd    text diff=python
@@ -11,7 +10,6 @@
 *.pyw    text diff=python
 *.pyx    text diff=python
 *.pyz    text diff=python
-
 # Binary files
 # ============
 *.db     binary
@@ -21,11 +19,11 @@
 *.pyc    binary
 *.pyd    binary
 *.pyo    binary
-
 # Jupyter notebook
 *.ipynb  text
-
 # Note: .db, .p, and .pkl files are associated
 # with the python modules ``pickle``, ``dbm.*``,
 # ``shelve``, ``marshal``, ``anydbm``, & ``bsddb``
 # (among others).
+*.h5 filter=lfs diff=lfs merge=lfs -text
+notebooks/kia_dataset_exploratory.ipynb filter=lfs diff=lfs merge=lfs -text
