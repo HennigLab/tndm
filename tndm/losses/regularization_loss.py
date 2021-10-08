@@ -1,11 +1,7 @@
-from typing import List
 import tensorflow as tf
 
-
-def regularization_loss(arg_idx: List[int]):
-    losses_getter = eval('lambda x: x' + ''.join(['[%d]' % (n) for n in arg_idx]))
+def regularization_loss():
     @tf.function
-    def loss_fun(y_true, y_pred):
-        # KL DIVERGENCE
-        return tf.reduce_sum(losses_getter(y_pred))
+    def loss_fun(losses):
+        return tf.reduce_sum(losses)
     return loss_fun

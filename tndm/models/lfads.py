@@ -3,7 +3,6 @@ from copy import deepcopy
 import tensorflow as tf
 from typing import Dict, Any
 from collections import defaultdict
-import json
 
 from tndm.utils import ArgsParser, clean_layer_name, logger
 from tndm.layers import GaussianSampling, GeneratorGRU
@@ -39,7 +38,11 @@ class LFADS(ModelLoader, tf.keras.Model):
         self.dropout: float = float(ArgsParser.get_or_default(
             kwargs, 'dropout', 0.05))
         self.with_behaviour = False
+        self.neural_lik_type: str = str(ArgsParser.get_or_default(
+            kwargs, 'neural_lik_type','poisson'))
 
+        self.neural_loglike_loss = poisson_loglike_loss(self.timestep)
+        
         layers = ArgsParser.get_or_default(kwargs, 'layers', {})
         if not isinstance(layers, defaultdict):
             layers: Dict[str, Any] = defaultdict(
@@ -120,7 +123,10 @@ class LFADS(ModelLoader, tf.keras.Model):
 
     def get_settings(self):
         return dict(        
+            neural_lik_type=self.neural_lik_type,
             encoder_dim=self.encoder_dim,
+            decoder_dim=self.decoder_dim,
+            initial_condition_dim=self.initial_condition_dim,
             factors=self.factors,
             neural_dim=self.neural_dim,
             max_grad_norm=self.max_grad_norm,
@@ -135,7 +141,7 @@ class LFADS(ModelLoader, tf.keras.Model):
     def call(self, inputs, training: bool = True):
         g0, mean, logvar = self.encode(inputs, training=training)
         log_f, z = self.decode(g0, inputs, training=training)
-        return log_f, (g0, mean, logvar), z, inputs
+        return log_f, (g0, mean, logvar), z
 
     @tf.function
     def decode(self, g0, inputs, training: bool = True):
@@ -153,7 +159,10 @@ class LFADS(ModelLoader, tf.keras.Model):
         # soft-clipping the log-firingrate log(self.timestep) so that the
         # log-likelihood does not return NaN
         # (https://github.com/tensorflow/tensorflow/issues/47019)
-        log_f = tf.tanh(self.neural_dense(z, training=training) / 100) * 100
+        if self.neural_lik_type == 'poisson':
+            log_f = tf.tanh(self.neural_dense(z, training=training) / 100) * 100
+        else:
+            log_f = self.neural_dense(z, training=training)
 
         # In order to be able to auto-encode, the dimensions should be the same
         if not self.built:
@@ -183,9 +192,9 @@ class LFADS(ModelLoader, tf.keras.Model):
     def compile(self, optimizer, loss_weights, *args, **kwargs):
         super(LFADS, self).compile(
             loss=[
-                poisson_loglike_loss(self.timestep, args_idx=([0,0], [0,3])),
-                gaussian_kldiv_loss(self.prior_variance, args_idx=([0,1,1], [0,1,2])),
-                regularization_loss(arg_idx=[1])],
+                poisson_loglike_loss(self.timestep),
+                gaussian_kldiv_loss(self.prior_variance),
+                regularization_loss()],
             optimizer=optimizer,
         )
         self.loss_weights = loss_weights
@@ -225,9 +234,12 @@ class LFADS(ModelLoader, tf.keras.Model):
         x, y, sample_weight = tf.keras.utils.unpack_x_y_sample_weight(data)
         # Run forward pass.
         with tf.GradientTape() as tape:
-            y_pred = (self(x, training=True), self.losses)
-            loss_loglike, loss_kldiv, loss_reg = [
-                func(None, y_pred) for func in self.compiled_loss._losses]
+            log_f, g, _ = self(x, training=True)
+
+            loss_loglike    = self.compiled_loss._losses[0](log_f,x) 
+            loss_kldiv      = self.compiled_loss._losses[1](g)
+            loss_reg        = self.compiled_loss._losses[2](self.losses)
+
             loss = self.loss_weights[0] * loss_loglike + \
                 self.loss_weights[1] * loss_kldiv + \
                 self.loss_weights[2] * loss_reg
@@ -317,9 +329,11 @@ class LFADS(ModelLoader, tf.keras.Model):
         # data when a `tf.data.Dataset` is provided.
         x, y, sample_weight = tf.keras.utils.unpack_x_y_sample_weight(data)
         # Run forward pass.
-        y_pred = (self(x, training=False), self.losses)
-        loss_loglike, loss_kldiv, loss_reg = [
-            func(None, y_pred) for func in self.compiled_loss._losses]
+        log_f, g, _ = self(x, training=False)
+
+        loss_loglike    = self.compiled_loss._losses[0](log_f,x)  
+        loss_kldiv      = self.compiled_loss._losses[1](g)
+
         loss = self.loss_weights[0] * loss_loglike + \
             self.loss_weights[1] * loss_kldiv
 

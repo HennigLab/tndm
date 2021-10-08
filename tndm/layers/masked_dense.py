@@ -4,7 +4,7 @@ import numpy as np
 
 class MaskedDense(tf.keras.layers.Dense):
 
-    def __init__(self, units, **kwargs):
+    def __init__(self, units, mask_type='causal', **kwargs):
         """Masked Dense
 
         It creates a causal relationship between the input TS and the output TS.
@@ -12,8 +12,10 @@ class MaskedDense(tf.keras.layers.Dense):
         Args:
             units: units in the output layer (output dimensionality X timesteps)
             timesteps (int): timesteps
+            mask_type: 'causal' or 'full'
         """
         super(MaskedDense, self).__init__(units, **kwargs)
+        self.mask_type = mask_type
 
     def build(self, input_shape):
         self.timesteps = input_shape[-2]
@@ -31,22 +33,33 @@ class MaskedDense(tf.keras.layers.Dense):
             [np.prod(input_shape[1:])]
         )
 
-        self.mask = tf.constant(
-            np.tril(
+        if self.mask_type=='causal':
+            self.mask = tf.constant(
+                np.tril(
+                    np.ones(
+                        [self.timesteps, self.timesteps]
+                    )).flatten(
+                ).repeat(
+                    self.mask_in_size
+                ).reshape(
+                    [self.timesteps * self.mask_in_size, self.timesteps],
+                    order='F'
+                ).repeat(
+                    self.mask_out_size,
+                    axis=1
+                ),
+                dtype='float32'
+            )
+        elif self.mask_type=='full':
+            self.mask = tf.constant(
                 np.ones(
-                    [self.timesteps, self.timesteps]
-                )).flatten(
-            ).repeat(
-                self.mask_in_size
-            ).reshape(
-                [self.timesteps * self.mask_in_size, self.timesteps],
-                order='F'
-            ).repeat(
-                self.mask_out_size,
-                axis=1
-            ),
-            dtype='float32'
-        )
+                     [self.timesteps * self.mask_in_size, self.timesteps * self.mask_out_size]
+                ),
+                dtype='float32'
+            )
+        else:
+            raise NotImplementedError(
+                'Mask type %s not implemented' % (self.mask_type))
 
         self.outbound_reshape = tf.keras.layers.Reshape(
             [self.timesteps, self.mask_out_size]

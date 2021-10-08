@@ -30,7 +30,7 @@ def test_dimensionality():
     model = LFADS(neural_dim=50, layers={'decoder': {'original_cell': True}})
     model.build(input_shape=[None] + list(input_data.shape[1:]))
 
-    log_f, (g0_r, r_mean, r_logvar), z, inputs = model.call(
+    log_f, (g0_r, r_mean, r_logvar), _ = model.call(
         input_data, training=True)
 
     tf.debugging.assert_equal(log_f.shape, tf.TensorShape([10, 100, 50]))
@@ -38,7 +38,7 @@ def test_dimensionality():
     tf.debugging.assert_equal(r_logvar.shape, tf.TensorShape([10, 64]))
     tf.debugging.assert_equal(g0_r.shape, tf.TensorShape([10, 64]))
 
-    log_f, (g0_r, r_mean, r_logvar), z, inputs = model.call(
+    log_f, (g0_r, r_mean, r_logvar), _ = model.call(
         input_data, training=False)
 
     tf.debugging.assert_equal(log_f.shape, tf.TensorShape([10, 100, 50]))
@@ -123,7 +123,7 @@ def test_training_regression():
             neural_data_val,
             None))
 
-    log_f, _, _, _ = model.call(neural_data_train, training=False)
+    log_f, _, _ = model.call(neural_data_train, training=False)
 
     probs = 1 / (1 + np.exp(-log_f.numpy()))
 

@@ -1,19 +1,18 @@
-from typing import Tuple, List
 import tensorflow_probability as tfp
 import tensorflow as tf
 
-
-def covariance_loss(disentanglement_batches, args_idx: Tuple[List[int], List[int], List[int], List[int]]):
-    gr_mean_getter = eval('lambda x: x' + ''.join(['[%d]' % (n) for n in args_idx[0]]))
-    gr_logvar_getter = eval('lambda x: x' + ''.join(['[%d]' % (n) for n in args_idx[1]]))
-    gi_mean_getter = eval('lambda x: x' + ''.join(['[%d]' % (n) for n in args_idx[2]]))
-    gi_logvar_getter = eval('lambda x: x' + ''.join(['[%d]' % (n) for n in args_idx[3]]))
+def covariance_loss(disentanglement_batches):
+    '''
+    Input format: (g_?, mean_?, logvar_?)
+    '''
+    mean_getter = lambda x: x[1]
+    logvar_getter = lambda x: x[2]
     @tf.function
-    def loss_fun(y_true, y_pred):
-        gr_mean = gr_mean_getter(y_pred)
-        gr_logvar = gr_logvar_getter(y_pred)
-        gi_mean = gi_mean_getter(y_pred)
-        gi_logvar = gi_logvar_getter(y_pred)
+    def loss_fun(g_r,g_i):
+        gr_mean = mean_getter(g_r)
+        gr_logvar = logvar_getter(g_r)
+        gi_mean = mean_getter(g_i)
+        gi_logvar = logvar_getter(g_i)
         sample_r = tf.random.normal(shape=[disentanglement_batches, gr_mean.shape[-2], gr_mean.shape[-1]]) * tf.exp(gr_logvar * .5) + gr_mean
         sample_i = tf.random.normal(shape=[disentanglement_batches, gi_mean.shape[-2], gi_mean.shape[-1]]) * tf.exp(gi_logvar * .5) + gi_mean
         sample_r = tf.reshape(sample_r, [sample_r.shape[0] * sample_r.shape[1], sample_r.shape[2]])

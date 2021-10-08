@@ -1,28 +1,22 @@
 from __future__ import annotations
-
-from collections import defaultdict
 from tndm.utils.args_parser import ArgsParser
 import tensorflow as tf
 from typing import List, Tuple, Optional, Dict, Any, Union
-from enum import Enum
 from collections.abc import Iterable
 import numpy as np
 import json
 import yaml
 import os
 import pandas as pd
-from copy import deepcopy
 from sklearn.linear_model import Ridge
 from datetime import datetime
 import getpass
 import socket
+import pickle as pkl
 
 from tndm import TNDM, LFADS
 from tndm.utils import AdaptiveWeights, logger, CustomEncoder, LearningRateStopping
-from tndm.data import DataManager
-import tndm.losses as lnl
 from .parser import Parser, ModelType
-
 
 tf.config.run_functions_eagerly(True)
 
@@ -140,7 +134,8 @@ class Runtime(object):
                 shuffle=True,
                 epochs=epochs,
                 batch_size=batch_size,
-                validation_data=validation_data
+                validation_data=validation_data,
+                verbose=2
             )
         except KeyboardInterrupt:
             return model, None
@@ -202,6 +197,8 @@ class Runtime(object):
             logger.info('Metrics history saved, now evaluating the model')
 
         stats = Runtime.evaluate_model(data, model)
+        with open(os.path.join(output_directory, 'model_and_data.pkl'), 'wb') as f:
+            pkl.dump(data,f)
         with open(os.path.join(output_directory, 'performance.json'), 'w') as fp:
             json.dump(stats, fp, cls=CustomEncoder, indent=2)
         logger.info('Model evaluated, now saving settings')
@@ -236,7 +233,9 @@ class Runtime(object):
 
     @staticmethod
     def evaluate_model(data, model: tf.keras.Model):
-        (d_n_train, d_n_validation, d_n_test), (d_b_train, d_b_validation, d_b_test), (d_l_train, d_l_validation, d_l_test) = data
+        (d_n_train, d_n_validation, d_n_test), \
+        (d_b_train, d_b_validation, d_b_test), \
+        (d_l_train, d_l_validation, d_l_test) = data
         train_stats, ridge_model = Runtime.evaluate_performance(model, d_n_train, d_b_train, d_l_train)
         validation_stats, _ = Runtime.evaluate_performance(model, d_n_validation, d_b_validation, d_l_validation, ridge_model)
         test_stats, _ = Runtime.evaluate_performance(model, d_n_test, d_b_test, d_l_test, ridge_model)
@@ -246,26 +245,25 @@ class Runtime(object):
             test=test_stats
         )
     
-    def evaluate_performance(model: tf.keras.Model, neural: tf.Tensor, behaviour: tf.Tensor, latent: tf.Tensor, ridge_model=None):
+    def evaluate_performance(model: tf.keras.Model, neural: tf.Tensor, behaviour: tf.Tensor, \
+            latent: tf.Tensor, ridge_model=None):
         if isinstance(model, TNDM):
-            log_f, b, (g0_r, mean_r, logvar_r), (g0_r, mean_i, logvar_i), (z_r, z_i), inputs = model(neural, training=False)
-            z = np.concatenate([z_r.numpy().T, z_i.numpy().T], axis=0).T
+            log_f, b, _, _, (z_r, z_i) = model(neural, training=False)
+            z = np.concatenate([z_r, z_i], axis=-1)
         elif isinstance(model, LFADS):
-            log_f, (g0, mean, logvar), z, inputs = model(neural, training=False)
+            log_f, _, z = model(neural, training=False)
             z = z.numpy()
         else:
             raise ValueError('Model not recognized')
 
         # Behaviour likelihood
         if model.with_behaviour:
-            loss_fun = lnl.gaussian_loglike_loss([])
-            b_like = loss_fun(behaviour, b).numpy() / behaviour.shape[0]
+            b_like = -model.behavior_loglike_loss(behaviour, b).numpy() / behaviour.shape[0]
         else:
             b_like = None
 
         # Neural likelihood
-        loss_fun = lnl.poisson_loglike_loss(model.timestep, ([0], [1]))
-        n_like = loss_fun(None, (log_f, inputs)).numpy() / inputs.shape[0]
+        n_like = -model.neural_loglike_loss(log_f, neural).numpy() / neural.shape[0]
 
         # Behaviour R2
         if model.with_behaviour:
@@ -293,3 +291,4 @@ class Runtime(object):
             neural_likelihood=n_like,
             behaviour_r2=b_r2,
             latent_r2=l_r2), ridge_model
+
