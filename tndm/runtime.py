@@ -12,7 +12,6 @@ from sklearn.linear_model import Ridge
 from datetime import datetime
 import getpass
 import socket
-import pickle as pkl
 
 from tndm import TNDM, LFADS
 from tndm.utils import AdaptiveWeights, logger, CustomEncoder, LearningRateStopping
@@ -197,8 +196,6 @@ class Runtime(object):
             logger.info('Metrics history saved, now evaluating the model')
 
         stats = Runtime.evaluate_model(data, model)
-        with open(os.path.join(output_directory, 'model_and_data.pkl'), 'wb') as f:
-            pkl.dump(data,f)
         with open(os.path.join(output_directory, 'performance.json'), 'w') as fp:
             json.dump(stats, fp, cls=CustomEncoder, indent=2)
         logger.info('Model evaluated, now saving settings')
