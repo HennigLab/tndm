@@ -60,8 +60,6 @@ class Parser(object):
         neural_keys = ArgsParser.get_or_error(data, 'neural_keys')
         behavioural_keys = ArgsParser.get_or_default(
             data, 'behavioural_keys', {})
-        condition_keys = ArgsParser.get_or_default(
-            data, 'condition_keys', {})
         latent_keys = ArgsParser.get_or_default(data, 'latent_keys', {})
         d_n_train, d_n_validation, d_n_test = Parser.parse_data(
             dataset, neural_keys)
