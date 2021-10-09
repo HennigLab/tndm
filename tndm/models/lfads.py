@@ -40,6 +40,8 @@ class LFADS(ModelLoader, tf.keras.Model):
         self.with_behaviour = False
         self.neural_lik_type: str = str(ArgsParser.get_or_default(
             kwargs, 'neural_lik_type','poisson'))
+        self.soft_max_min_poisson_firing_rate: float = float(ArgsParser.get_or_default(
+            kwargs, 'soft_max_min_poisson_firing_rate', 100.0))
 
         self.neural_loglike_loss = poisson_loglike_loss(self.timestep)
         
@@ -160,7 +162,7 @@ class LFADS(ModelLoader, tf.keras.Model):
         # log-likelihood does not return NaN
         # (https://github.com/tensorflow/tensorflow/issues/47019)
         if self.neural_lik_type == 'poisson':
-            log_f = tf.tanh(self.neural_dense(z, training=training) / 100) * 100
+            log_f = tf.tanh(self.neural_dense(z, training=training) / self.soft_max_min_poisson_firing_rate) * self.soft_max_min_poisson_firing_rate
         else:
             log_f = self.neural_dense(z, training=training)
 
