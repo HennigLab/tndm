@@ -55,6 +55,8 @@ class TNDM(ModelLoader, tf.keras.Model):
             kwargs, 'behavior_lik_type','MSE'))
         self.behavior_scale: float = float(ArgsParser.get_or_default(
             kwargs, 'behavior_scale',1.0))
+        self.soft_max_min_poisson_firing_rate: float = float(ArgsParser.get_or_default(
+            kwargs, 'soft_max_min_poisson_firing_rate', 100.0))
 
         # convert likelihood types (str) to functions
         self.neural_loglike_loss = self.str2likelihood(self.neural_lik_type)
@@ -283,7 +285,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         # log-likelihood does not return NaN
         # (https://github.com/tensorflow/tensorflow/issues/47019)
         if self.neural_lik_type == 'poisson':
-            log_f = tf.tanh(self.neural_dense(z, training=training) / 100) * 100
+            log_f = tf.tanh(self.neural_dense(z, training=training) / self.soft_max_min_poisson_firing_rate) * self.soft_max_min_poisson_firing_rate
         else:
             log_f = self.neural_dense(z, training=training)
 
