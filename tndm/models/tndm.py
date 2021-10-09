@@ -52,7 +52,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         self.neural_lik_type: str = str(ArgsParser.get_or_default(
             kwargs, 'neural_lik_type','poisson'))
         self.behavior_lik_type: str = str(ArgsParser.get_or_default(
-            kwargs, 'behavior_lik_type','gaussian'))
+            kwargs, 'behavior_lik_type','MSE'))
         self.behavior_scale: float = float(ArgsParser.get_or_default(
             kwargs, 'behavior_scale',1.0))
 
