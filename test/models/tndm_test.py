@@ -29,8 +29,7 @@ def test_dimensionality():
     model = TNDM(neural_dim=50, behaviour_dim=2, layers={'irrelevant_decoder': {'original_cell': True}, 'relevant_decoder': {'original_cell': True}})
     model.build(input_shape=[None] + list(input_data.shape[1:]))
 
-    f, b, (g0_r, r_mean, r_logvar), (g0_i, i_mean, i_logvar), (z_r,
-                                                               z_i), inputs = model.call(input_data, training=True)
+    f, b, (g0_r, r_mean, r_logvar), (g0_i, i_mean, i_logvar), _ = model.call(input_data, training=True)
 
     tf.debugging.assert_equal(b.shape, tf.TensorShape([10, 100, 2]))
     tf.debugging.assert_equal(f.shape, tf.TensorShape([10, 100, 50]))
@@ -41,8 +40,7 @@ def test_dimensionality():
     tf.debugging.assert_equal(i_logvar.shape, tf.TensorShape([10, 64]))
     tf.debugging.assert_equal(g0_i.shape, tf.TensorShape([10, 64]))
 
-    f, b, (g0_r, r_mean, r_logvar), (g0_i, i_mean, i_logvar), (z_r,
-                                                               z_i), inputs = model.call(input_data, training=False)
+    f, b, (g0_r, r_mean, r_logvar), (g0_i, i_mean, i_logvar), _ = model.call(input_data, training=False)
 
     tf.debugging.assert_equal(b.shape, tf.TensorShape([10, 100, 2]))
     tf.debugging.assert_equal(f.shape, tf.TensorShape([10, 100, 50]))

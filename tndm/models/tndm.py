@@ -2,8 +2,6 @@ from __future__ import annotations
 import tensorflow as tf
 from copy import deepcopy
 from typing import Dict, Any
-import tensorflow_probability as tfp
-import math as m
 from collections import defaultdict
 
 from tndm.utils import ArgsParser, clean_layer_name, logger
@@ -51,9 +49,23 @@ class TNDM(ModelLoader, tf.keras.Model):
         self.timestep: float = float(ArgsParser.get_or_default(
             kwargs, 'timestep', 0.01))
         self.with_behaviour = True
+        self.neural_lik_type: str = str(ArgsParser.get_or_default(
+            kwargs, 'neural_lik_type','poisson'))
+        self.behavior_lik_type: str = str(ArgsParser.get_or_default(
+            kwargs, 'behavior_lik_type','MSE'))
+        self.behavior_scale: float = float(ArgsParser.get_or_default(
+            kwargs, 'behavior_scale',1.0))
+        self.soft_max_min_poisson_log_firing_rate: float = float(ArgsParser.get_or_default(
+            kwargs, 'soft_max_min_poisson_log_firing_rate', 100.0))
+
+        # convert likelihood types (str) to functions
+        self.neural_loglike_loss = self.str2likelihood(self.neural_lik_type)
+        self.behavior_loglike_loss = self.str2likelihood(self.behavior_lik_type,
+                                                    scale=self.behavior_scale)
 
         layers = ArgsParser.get_or_default(kwargs, 'layers', {})
         if not isinstance(layers, defaultdict):
+            print('Setting default regularizers...')
             layers: Dict[str, Any] = defaultdict(
                 lambda: dict(
                     kernel_regularizer=tf.keras.regularizers.L2(l=1),
@@ -175,10 +187,11 @@ class TNDM(ModelLoader, tf.keras.Model):
         behavioural_dense_args: Dict[str, Any] = layers['behavioural_dense']
         self.behaviour_type: str = str(ArgsParser.get_or_default_and_remove(
             behavioural_dense_args, 'behaviour_type', 'causal'))
-        logger.info('Behaviour type is %s' % (self.behaviour_type))
-        if self.behaviour_type == 'causal':
+        if self.behaviour_type == 'causal' or self.behaviour_type == 'full':
             self.behavioural_dense = MaskedDense(
-                self.behaviour_dim, name="CausalBehaviouralDense", **behavioural_dense_args)
+                self.behaviour_dim, name="BehaviouralDense", 
+                mask_type=self.behaviour_type, 
+                **behavioural_dense_args)
         elif self.behaviour_type == 'synchronous':
             self.behavioural_dense = tf.keras.layers.Dense(
                 self.behaviour_dim, name="SynchronousBehaviouralDense", **behavioural_dense_args)
@@ -192,13 +205,33 @@ class TNDM(ModelLoader, tf.keras.Model):
         self.neural_dense = tf.keras.layers.Dense(
             self.neural_dim, name="NeuralDense", **layers['neural_dense'])
 
+    def str2likelihood(self, lik_str, scale=1.):
+        if lik_str=='poisson':
+            ll = poisson_loglike_loss(self.timestep)
+        elif lik_str=='gaussian':
+            ll = gaussian_loglike_loss(sigma=scale)
+        elif lik_str=='MSE':
+            ll = tf.keras.losses.MeanSquaredError()
+        else:
+            raise NotImplementedError(
+                f'Likelihood type {lik_str} not implemented')
+        return ll
+            
+
     @staticmethod
     def load(filename) -> TNDM:
         return ModelLoader.load(filename, TNDM)
 
     def get_settings(self):
-        return dict(        
+        return dict(
+            neural_lik_type=self.neural_lik_type,
+            behavior_lik_type=self.behavior_lik_type,  
+            behavior_scale=self.behavior_scale,  
             encoder_dim=self.encoder_dim,
+            rel_decoder_dim=self.rel_decoder_dim,
+            irr_decoder_dim=self.irr_decoder_dim,
+            rel_initial_condition_dim=self.rel_initial_condition_dim,
+            irr_initial_condition_dim=self.irr_initial_condition_dim,
             irr_factors=self.irr_factors,
             rel_factors=self.rel_factors,
             neural_dim=self.neural_dim,
@@ -217,8 +250,7 @@ class TNDM(ModelLoader, tf.keras.Model):
                                    logvar_i) = self.encode(inputs, training=training)
         log_f, b, (z_r, z_i) = self.decode(
             g0_r, g0_i, inputs, training=training)
-        return log_f, b, (g0_r, mean_r, logvar_r), (g0_i, mean_i, logvar_i), (z_r, z_i), inputs
-        # TODO: change outputs to flat
+        return log_f, b, (g0_r, mean_r, logvar_r), (g0_i, mean_i, logvar_i), (z_r, z_i)
 
     @tf.function
     def decode(self, g0_r, g0_i, neural, training: bool = True):
@@ -252,7 +284,10 @@ class TNDM(ModelLoader, tf.keras.Model):
         # soft-clipping the log-firingrate log(self.timestep) so that the
         # log-likelihood does not return NaN
         # (https://github.com/tensorflow/tensorflow/issues/47019)
-        log_f = tf.tanh(self.neural_dense(z, training=training) / 100) * 100
+        if self.neural_lik_type == 'poisson':
+            log_f = tf.tanh(self.neural_dense(z, training=training) / self.soft_max_min_poisson_log_firing_rate) * self.soft_max_min_poisson_log_firing_rate
+        else:
+            log_f = self.neural_dense(z, training=training)
 
         # In order to be able to auto-encode, the dimensions should be the same
         if not self.built:
@@ -290,14 +325,15 @@ class TNDM(ModelLoader, tf.keras.Model):
         return (g0_r, mean_r, logvar_r), (g0_i, mean_i, logvar_i)
 
     def compile(self, optimizer, loss_weights: tf.Variable, *args, **kwargs):
+
         super(TNDM, self).compile(
             loss=[
-                poisson_loglike_loss(self.timestep, args_idx=([0,0], [0,5])),
-                gaussian_loglike_loss(arg_idx=[0,1]),
-                gaussian_kldiv_loss(self.prior_variance, args_idx=([0,2,1], [0,2,2])),
-                gaussian_kldiv_loss(self.prior_variance, args_idx=([0,3,1], [0,3,2])),
-                covariance_loss(self.disentanglement_batches, args_idx=([0,2,1], [0,2,2], [0,3,1], [0,3,2])),
-                regularization_loss(arg_idx=[1])],
+                self.neural_loglike_loss,
+                self.behavior_loglike_loss,
+                gaussian_kldiv_loss(self.prior_variance),
+                gaussian_kldiv_loss(self.prior_variance),
+                covariance_loss(self.disentanglement_batches),
+                regularization_loss()],
             optimizer=optimizer,
         )
         self.loss_weights = loss_weights
@@ -339,10 +375,16 @@ class TNDM(ModelLoader, tf.keras.Model):
         x, y, sample_weight = tf.keras.utils.unpack_x_y_sample_weight(data)
         # Run forward pass.
         with tf.GradientTape() as tape:
-            y_pred = (self(x, training=True), self.losses) # self.losses contains L2 losses
+            log_f, b, g_r, g_i, _ = self(x, training=True)
 
-            neural_loglike_loss, behavioural_loglike_loss, relevant_kldiv_loss, irrelevant_kldiv_loss, independence_loss, reg_loss = \
-                [func(y, y_pred) for func in self.compiled_loss._losses]
+            neural_loglike_loss         = self.compiled_loss._losses[0](log_f,x)
+            behavioural_loglike_loss    = self.compiled_loss._losses[1](y,b)
+            relevant_kldiv_loss         = self.compiled_loss._losses[2](g_r)
+            irrelevant_kldiv_loss       = self.compiled_loss._losses[3](g_i)
+            independence_loss           = self.compiled_loss._losses[4](g_r,g_i)
+            reg_loss                    = self.compiled_loss._losses[5](self.losses)
+                                        # self.losses contains L2 losses
+
             loss = self.loss_weights[0] * neural_loglike_loss + \
                 self.loss_weights[1] * behavioural_loglike_loss + \
                 self.loss_weights[2] * relevant_kldiv_loss + \
@@ -457,9 +499,16 @@ class TNDM(ModelLoader, tf.keras.Model):
         # data when a `tf.data.Dataset` is provided.
         x, y, sample_weight = tf.keras.utils.unpack_x_y_sample_weight(data)
         # Run forward pass.
-        y_pred = (self(x, training=False), self.losses) # self.losses contains L2 losses
-        neural_loglike_loss, behavioural_loglike_loss, relevant_kldiv_loss, irrelevant_kldiv_loss, independence_loss, reg_loss = \
-            [func(y, y_pred) for func in self.compiled_loss._losses]
+        log_f, b, g_r, g_i, _ = self(x, training=False)
+
+        neural_loglike_loss         = self.compiled_loss._losses[0](log_f,x)
+        behavioural_loglike_loss    = self.compiled_loss._losses[1](y, b)
+        relevant_kldiv_loss         = self.compiled_loss._losses[2](g_r)
+        irrelevant_kldiv_loss       = self.compiled_loss._losses[3](g_i)
+        independence_loss           = self.compiled_loss._losses[4](g_r,g_i)
+        reg_loss                    = self.compiled_loss._losses[5](self.losses)
+                                    # self.losses contains L2 losses
+
         loss = self.loss_weights[0] * neural_loglike_loss + \
             self.loss_weights[1] * behavioural_loglike_loss + \
             self.loss_weights[2] * relevant_kldiv_loss + \

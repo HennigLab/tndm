@@ -3,24 +3,12 @@ from __future__ import annotations
 from collections import defaultdict
 from tndm.utils.args_parser import ArgsParser
 import tensorflow as tf
-from typing import List, Tuple, Optional, Dict, Any, Union
+from typing import Dict, Any
 from enum import Enum
-from collections.abc import Iterable
-import numpy as np
-import json
-import yaml
-import os
-import pandas as pd
 from copy import deepcopy
-from sklearn.linear_model import Ridge
-from datetime import datetime
-import getpass
-import socket
 
-from tndm.utils import AdaptiveWeights, logger, CustomEncoder
+from tndm.utils import AdaptiveWeights
 from tndm.data import DataManager
-import tndm.losses as lnl
-
 
 class ModelType(Enum):
     TNDM = 'tndm'
@@ -123,6 +111,7 @@ class Parser(object):
                     tmp_layer[key] = Parser.parse_initializer(value)
                 elif 'regularizer' in key.lower():
                     tmp_layer[key] = Parser.parse_regularizer(value)
+                    # print(f'layer={layer_name}, reg={value}')
                 else:
                     tmp_layer[key] = value
             layers[layer_name] = tmp_layer
@@ -148,8 +137,10 @@ class Parser(object):
             settings, 'arguments', {})
         if kernel_reg_type.lower() == 'l2':
             r = tf.keras.regularizers.L2
+        elif kernel_reg_type.lower() == 'l1':
+            r = tf.keras.regularizers.L1
         else:
-            raise NotImplementedError('Only l2 has been implemented')
+            raise NotImplementedError('Only l1/l2 has been implemented')
         return r(**kernel_reg_kwargs)
 
     @staticmethod

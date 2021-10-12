@@ -17,6 +17,7 @@ class ModelLoader(ABC):
             settings = json.load(fp)
         
         model_settings, layers_settings = Parser.parse_model_settings(settings)
+        
         model = model_class(**model_settings, 
             layers=layers_settings)
 
