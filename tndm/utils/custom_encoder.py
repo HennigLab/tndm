@@ -1,8 +1,6 @@
 from json import JSONEncoder
-from numpy.lib.arraysetops import isin
 import tensorflow as tf
 import numpy as np
-
 
 class CustomEncoder(JSONEncoder):
     def default(self, o):

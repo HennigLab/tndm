@@ -9,9 +9,7 @@ from tndm.layers import GaussianSampling, GeneratorGRU, MaskedDense
 from tndm.losses import gaussian_kldiv_loss, poisson_loglike_loss, regularization_loss, gaussian_loglike_loss, covariance_loss
 from .model_loader import ModelLoader
 
-
 tf.config.run_functions_eagerly(True)
-
 
 class TNDM(ModelLoader, tf.keras.Model):
 
@@ -34,6 +32,8 @@ class TNDM(ModelLoader, tf.keras.Model):
             kwargs, 'irr_factors', 3))
         self.rel_factors: int = int(ArgsParser.get_or_default(
             kwargs, 'rel_factors', 3))
+        self.feedback_factors: int = int(ArgsParser.get_or_default(
+            kwargs, 'feedback_factors', 3))
         self.neural_dim: int = int(ArgsParser.get_or_error(
             kwargs, 'neural_dim'))
         self.behaviour_dim: int = int(ArgsParser.get_or_error(
@@ -187,10 +187,12 @@ class TNDM(ModelLoader, tf.keras.Model):
         behavioural_dense_args: Dict[str, Any] = layers['behavioural_dense']
         self.behaviour_type: str = str(ArgsParser.get_or_default_and_remove(
             behavioural_dense_args, 'behaviour_type', 'causal'))
-        if self.behaviour_type == 'causal' or self.behaviour_type == 'full':
+        if self.behaviour_type == 'causal' or self.behaviour_type == 'full' or self.behaviour_type == 'causal+feedback' \
+            or self.behaviour_type == 'feedback' or self.behaviour_type == 'gauss':
             self.behavioural_dense = MaskedDense(
                 self.behaviour_dim, name="BehaviouralDense", 
                 mask_type=self.behaviour_type, 
+                feedback_factors=self.feedback_factors,
                 **behavioural_dense_args)
         elif self.behaviour_type == 'synchronous':
             self.behavioural_dense = tf.keras.layers.Dense(
@@ -234,6 +236,7 @@ class TNDM(ModelLoader, tf.keras.Model):
             irr_initial_condition_dim=self.irr_initial_condition_dim,
             irr_factors=self.irr_factors,
             rel_factors=self.rel_factors,
+            feedback_factors=self.feedback_factors,
             neural_dim=self.neural_dim,
             behaviour_dim=self.behaviour_dim,
             timestep=self.timestep,
@@ -285,7 +288,8 @@ class TNDM(ModelLoader, tf.keras.Model):
         # log-likelihood does not return NaN
         # (https://github.com/tensorflow/tensorflow/issues/47019)
         if self.neural_lik_type == 'poisson':
-            log_f = tf.tanh(self.neural_dense(z, training=training) / self.soft_max_min_poisson_log_firing_rate) * self.soft_max_min_poisson_log_firing_rate
+            log_f = tf.tanh(self.neural_dense(z, training=training) / \
+                self.soft_max_min_poisson_log_firing_rate ) * self.soft_max_min_poisson_log_firing_rate 
         else:
             log_f = self.neural_dense(z, training=training)
 
