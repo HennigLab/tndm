@@ -6,7 +6,8 @@ from collections import defaultdict
 
 from tndm.utils import ArgsParser, clean_layer_name, logger
 from tndm.layers import GaussianSampling, GeneratorGRU, MaskedDense
-from tndm.losses import gaussian_kldiv_loss, poisson_loglike_loss, regularization_loss, gaussian_loglike_loss, covariance_loss
+from tndm.losses import gaussian_kldiv_loss, poisson_loglike_loss, regularization_loss, \
+                        gaussian_loglike_loss, covariance_loss, mse_loss
 from .model_loader import ModelLoader
 
 
@@ -211,7 +212,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         elif lik_str=='gaussian':
             ll = gaussian_loglike_loss(sigma=scale)
         elif lik_str=='MSE':
-            ll = tf.keras.losses.MeanSquaredError()
+            ll = mse_loss()
         else:
             raise NotImplementedError(
                 f'Likelihood type {lik_str} not implemented')
