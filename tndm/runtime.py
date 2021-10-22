@@ -74,7 +74,7 @@ class Runtime(object):
               train_dataset: Tuple[tf.Tensor, tf.Tensor], adaptive_weights: AdaptiveWeights,
               val_dataset: Optional[Tuple[tf.Tensor, tf.Tensor]] = None, batch_size: Optional[int] = None, logdir: Optional[str] = None,
               adaptive_lr: Optional[Union[dict, tf.keras.callbacks.Callback]] = None, layers_settings: Dict[str, Any] = {},
-              terminating_lr: Optional[float]=None):
+              terminating_lr: Optional[float]=None, verbose: Optional[int] = 2):
 
         if isinstance(model_type, str):
             model_type = ModelType.from_string(model_type)
@@ -134,7 +134,7 @@ class Runtime(object):
                 epochs=epochs,
                 batch_size=batch_size,
                 validation_data=validation_data,
-                verbose=2
+                verbose=verbose
             )
         except KeyboardInterrupt:
             return model, None
