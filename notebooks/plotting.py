@@ -62,7 +62,7 @@ def plot_1factor(f, i, di, n_show = 40, ax=None, labels=None, title=None):
     for t in range(n_show):
         plt.plot(x, (f[t,:,i]),color=colors[di[t]],alpha=.2, lw=1)
     for d in range(8):
-        if np.sum(di==i)>1:
+        if np.sum(di==d)>1:
             plt.plot(x, np.mean(f.numpy()[di==d,:,i],axis=0), color=colors[d],alpha=1, lw=2)
     plt.title(labels)
     plt.xlabel('Time (ms)')
