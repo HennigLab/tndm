@@ -246,9 +246,9 @@ class TNDM(ModelLoader, tf.keras.Model):
         )
 
     @tf.function
-    def call(self, inputs, training: bool = True):
+    def call(self, inputs, training: bool = True, test_sample_mode: str='mean'):
         (g0_r, mean_r, logvar_r), (g0_i, mean_i,
-                                   logvar_i) = self.encode(inputs, training=training)
+                                   logvar_i) = self.encode(inputs, training=training, test_sample_mode=test_sample_mode)
         log_f, b, (z_r, z_i) = self.decode(
             g0_r, g0_i, inputs, training=training)
         return log_f, b, (g0_r, mean_r, logvar_r), (g0_i, mean_i, logvar_i), (z_r, z_i)
@@ -298,7 +298,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         return log_f, b, (z_r, z_i)
 
     @tf.function
-    def encode(self, neural, training: bool=True):
+    def encode(self, neural, training: bool=True, test_sample_mode: str='mean'):
         dropped_neural = self.initial_dropout(neural, training=training)
         encoded = self.encoder(dropped_neural, training=training)[0]
         dropped_encoded = self.dropout_post_encoder(encoded, training=training)
@@ -311,7 +311,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         else:
             logvar_r = tf.zeros_like(mean_r) + tf.math.log(self.encoded_var_min)
         g0_r = self.relevant_sampling(
-            tf.stack([mean_r, logvar_r], axis=-1), training=training)
+            tf.stack([mean_r, logvar_r], axis=-1), training=training, test_sample_mode=test_sample_mode)
 
         # Irrelevant
         mean_i = self.irrelevant_dense_mean(dropped_encoded, training=training)
@@ -321,7 +321,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         else:
             logvar_i = tf.zeros_like(mean_i) + tf.math.log(self.encoded_var_min)
         g0_i = self.irrelevant_sampling(
-            tf.stack([mean_i, logvar_i], axis=-1), training=training)
+            tf.stack([mean_i, logvar_i], axis=-1), training=training, test_sample_mode=test_sample_mode)
 
         return (g0_r, mean_r, logvar_r), (g0_i, mean_i, logvar_i)
 
