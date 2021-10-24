@@ -108,7 +108,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         self.initial_dropout = tf.keras.layers.Dropout(self.dropout)
         encoder_args: Dict[str, Any] = layers['encoder']
         self.encoded_var_min: float = ArgsParser.get_or_default_and_remove(
-            encoder_args, 'var_min', 0.1)
+            encoder_args, 'var_min', .0001)
         self.encoded_var_trainable: bool = ArgsParser.get_or_default_and_remove(
             encoder_args, 'var_trainable', True)
 
