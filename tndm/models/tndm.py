@@ -46,7 +46,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         self.disentanglement_batches: int = int(ArgsParser.get_or_default(
             kwargs, 'disentanglement_batches', 10))
         self.dropout: float = float(ArgsParser.get_or_default(
-            kwargs, 'dropout', 0.05))
+            kwargs, 'dropout', 0.15))
         self.timestep: float = float(ArgsParser.get_or_default(
             kwargs, 'timestep', 0.01))
         self.with_behaviour = True
@@ -117,7 +117,8 @@ class TNDM(ModelLoader, tf.keras.Model):
         self.encoder = tf.keras.layers.Bidirectional(
             forward_layer, backward_layer=backward_layer, name='EncoderRNN', merge_mode='concat')
         self.dropout_post_encoder = tf.keras.layers.Dropout(self.dropout)
-
+        self.dropout_post_rel_decoder = tf.keras.layers.Dropout(self.dropout)
+        self.dropout_post_irr_decoder = tf.keras.layers.Dropout(self.dropout)
         # DISTRIBUTION
         # Relevant
         self.relevant_dense_mean = tf.keras.layers.Dense(
@@ -146,17 +147,15 @@ class TNDM(ModelLoader, tf.keras.Model):
         relevant_decoder_args: Dict[str, Any] = layers['relevant_decoder']
         self.relevant_decoder_original_cell: float = ArgsParser.get_or_default_and_remove(
             relevant_decoder_args, 'original_cell', False)
-        rel_dropout = ArgsParser.get_or_default_and_remove(
-            relevant_decoder_args, 'dropout', self.dropout)
+        
         if self.relevant_decoder_original_cell:
             relevant_decoder_cell = GeneratorGRU(
                 self.rel_decoder_dim, **relevant_decoder_args)
             self.relevant_decoder = tf.keras.layers.RNN(
                 relevant_decoder_cell, return_sequences=True, time_major=False, name='RelevantDecoderGRU')
-            logger.warning('Dropout not implemented for the original decoder')
         else:
             self.relevant_decoder = tf.keras.layers.GRU(
-                self.rel_decoder_dim, return_sequences=True, time_major=False, name='RelevantDecoderGRU', dropout=rel_dropout, **relevant_decoder_args)
+                self.rel_decoder_dim, return_sequences=True, time_major=False, name='RelevantDecoderGRU', **relevant_decoder_args)
         # Irrelevant
         if self.irr_decoder_dim != self.irr_initial_condition_dim:
             self.irrelevant_dense_pre_decoder = tf.keras.layers.Dense(
@@ -166,17 +165,15 @@ class TNDM(ModelLoader, tf.keras.Model):
         irrelevant_decoder_args: Dict[str, Any] = layers['irrelevant_decoder']
         self.irrelevant_decoder_original_cell: float = ArgsParser.get_or_default_and_remove(
             irrelevant_decoder_args, 'original_cell', False)
-        irr_dropout = ArgsParser.get_or_default_and_remove(
-            irrelevant_decoder_args, 'dropout', self.dropout)
+        
         if self.irrelevant_decoder_original_cell:
             irrelevant_decoder_cell = GeneratorGRU(
                 self.irr_decoder_dim, **irrelevant_decoder_args)
             self.irrelevant_decoder = tf.keras.layers.RNN(
                 irrelevant_decoder_cell, return_sequences=True, time_major=False, name='IrrelevantDecoderGRU')
-            logger.warning('Dropout not implemented for the original decoder')
         else:
             self.irrelevant_decoder = tf.keras.layers.GRU(
-                self.irr_decoder_dim, return_sequences=True, time_major=False, name='IrrelevantDecoderGRU', dropout=irr_dropout, **irrelevant_decoder_args)
+                self.irr_decoder_dim, return_sequences=True, time_major=False, name='IrrelevantDecoderGRU', **irrelevant_decoder_args)
 
         # DIMENSIONALITY REDUCTION
         self.rel_factors_dense = tf.keras.layers.Dense(
@@ -267,7 +264,8 @@ class TNDM(ModelLoader, tf.keras.Model):
         g0_r_activated = self.relevant_pre_decoder_activation(g0_r) # Not in the original
         g_r = self.relevant_decoder(
             u_r, initial_state=g0_r_activated, training=training)
-        z_r = self.rel_factors_dense(g_r, training=training)
+        dropped_g_r = self.dropout_post_rel_decoder(g_r, training=training)
+        z_r = self.rel_factors_dense(dropped_g_r, training=training)
 
         # Irrelevant
         if self.irr_decoder_dim != self.irr_initial_condition_dim:
@@ -275,7 +273,8 @@ class TNDM(ModelLoader, tf.keras.Model):
         g0_i_activated = self.irrelevant_pre_decoder_activation(g0_i) # Not in the original
         g_i = self.irrelevant_decoder(
             u_i, initial_state=g0_i_activated, training=training)
-        z_i = self.irr_factors_dense(g_i, training=training)
+        dropped_g_i = self.dropout_post_irr_decoder(g_i, training=training)
+        z_i = self.irr_factors_dense(dropped_g_i, training=training)
 
         # Behaviour
         b = self.behavioural_dense(z_r, training=training)
