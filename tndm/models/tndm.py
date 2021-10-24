@@ -56,8 +56,10 @@ class TNDM(ModelLoader, tf.keras.Model):
             kwargs, 'behavior_lik_type','MSE'))
         self.behavior_scale: float = float(ArgsParser.get_or_default(
             kwargs, 'behavior_scale',1.0))
-        self.soft_max_min_poisson_log_firing_rate: float = float(ArgsParser.get_or_default(
-            kwargs, 'soft_max_min_poisson_log_firing_rate', 100.0))
+        self.threshold_poisson_log_firing_rate: float = float(ArgsParser.get_or_default(
+            kwargs, 'threshold_poisson_log_firing_rate', 100.0))
+        self.GRU_pre_norm: bool = bool(ArgsParser.get_or_default(
+            kwargs, 'GRU_pre_norm', False))
 
         # convert likelihood types (str) to functions
         self.neural_loglike_loss = self.str2likelihood(self.neural_lik_type)
@@ -142,8 +144,8 @@ class TNDM(ModelLoader, tf.keras.Model):
         if self.rel_decoder_dim != self.rel_initial_condition_dim:
             self.relevant_dense_pre_decoder = tf.keras.layers.Dense(
                 self.rel_decoder_dim, name="RelevantDensePreDecoder", **layers['relevant_dense_pre_decoder'])
-        self.relevant_pre_decoder_activation = tf.keras.layers.Activation(
-            'tanh')
+        # self.relevant_pre_decoder_activation = tf.keras.layers.Activation(
+        #     'tanh')
         relevant_decoder_args: Dict[str, Any] = layers['relevant_decoder']
         self.relevant_decoder_original_cell: float = ArgsParser.get_or_default_and_remove(
             relevant_decoder_args, 'original_cell', False)
@@ -160,8 +162,8 @@ class TNDM(ModelLoader, tf.keras.Model):
         if self.irr_decoder_dim != self.irr_initial_condition_dim:
             self.irrelevant_dense_pre_decoder = tf.keras.layers.Dense(
                 self.irr_decoder_dim, name="IrrelevantDensePreDecoder", **layers['irrelevant_dense_pre_decoder'])
-        self.irrelevant_pre_decoder_activation = tf.keras.layers.Activation(
-            'tanh')
+        # self.irrelevant_pre_decoder_activation = tf.keras.layers.Activation(
+        #     'tanh')
         irrelevant_decoder_args: Dict[str, Any] = layers['irrelevant_decoder']
         self.irrelevant_decoder_original_cell: float = ArgsParser.get_or_default_and_remove(
             irrelevant_decoder_args, 'original_cell', False)
@@ -261,19 +263,25 @@ class TNDM(ModelLoader, tf.keras.Model):
         # Relevant
         if self.rel_decoder_dim != self.rel_initial_condition_dim:
             g0_r = self.relevant_dense_pre_decoder(g0_r, training=training)
-        g0_r_activated = self.relevant_pre_decoder_activation(g0_r) # Not in the original
-        g_r = self.relevant_decoder(
-            u_r, initial_state=g0_r_activated, training=training)
-        dropped_g_r = self.dropout_post_rel_decoder(g_r, training=training)
+        if self.GRU_pre_norm:
+            #g0_r = self.relevant_pre_decoder_activation(g0_r) # Not in the original
+            g0_r = g0_r / tf.math.reduce_max(tf.abs(g0_r)) #normalize before GRU
+        else:
+            g0_r = g0_r
+        g_r = self.relevant_decoder(u_r, initial_state=g0_r, training=training)
+        dropped_g_r = self.dropout_post_rel_decoder(g_r, training=training) #dropout after GRU
         z_r = self.rel_factors_dense(dropped_g_r, training=training)
 
         # Irrelevant
         if self.irr_decoder_dim != self.irr_initial_condition_dim:
             g0_i = self.irrelevant_dense_pre_decoder(g0_i, training=training)
-        g0_i_activated = self.irrelevant_pre_decoder_activation(g0_i) # Not in the original
-        g_i = self.irrelevant_decoder(
-            u_i, initial_state=g0_i_activated, training=training)
-        dropped_g_i = self.dropout_post_irr_decoder(g_i, training=training)
+        if self.GRU_pre_norm:
+            #g0_i = self.irrelevant_pre_decoder_activation(g0_i) # Not in the original
+            g0_i = g0_i / tf.math.reduce_max(tf.abs(g0_i)) #normalize before GRU
+        else:
+            g0_i = g0_i
+        g_i = self.irrelevant_decoder(u_i, initial_state=g0_i, training=training)
+        dropped_g_i = self.dropout_post_irr_decoder(g_i, training=training) #dropout after GRU
         z_i = self.irr_factors_dense(dropped_g_i, training=training)
 
         # Behaviour
@@ -281,11 +289,13 @@ class TNDM(ModelLoader, tf.keras.Model):
 
         # Neural
         z = self.factors_concatenation([z_r, z_i], training=training)
-        # soft-clipping the log-firingrate log(self.timestep) so that the
+        # clipping the log-firingrate log(self.timestep) so that the
         # log-likelihood does not return NaN
         # (https://github.com/tensorflow/tensorflow/issues/47019)
         if self.neural_lik_type == 'poisson':
-            log_f = tf.tanh(self.neural_dense(z, training=training) / self.soft_max_min_poisson_log_firing_rate) * self.soft_max_min_poisson_log_firing_rate
+            log_f = tf.clip_by_value(self.neural_dense(z, training=training), 
+                                     clip_value_min=-self.threshold_poisson_log_firing_rate,
+                                     clip_value_max=self.threshold_poisson_log_firing_rate)
         else:
             log_f = self.neural_dense(z, training=training)
 
