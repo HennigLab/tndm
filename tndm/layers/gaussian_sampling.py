@@ -8,8 +8,8 @@ class GaussianSampling(tf.keras.layers.Layer):
         super(GaussianSampling, self).__init__(name=name)
 
     @tf.function
-    def call(self, inputs, training: bool = True):
-        if training:
+    def call(self, inputs, training: bool = True, test_sample_mode='mean'):
+        if training or test_sample_mode=='posterior_sample':
             batch = tf.shape(inputs)[-3]
             dim = tf.shape(inputs)[-2]
             epsilon = tf.keras.backend.random_normal(shape=(batch, dim))

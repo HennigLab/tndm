@@ -6,7 +6,8 @@ from collections import defaultdict
 
 from tndm.utils import ArgsParser, clean_layer_name, logger
 from tndm.layers import GaussianSampling, GeneratorGRU, MaskedDense
-from tndm.losses import gaussian_kldiv_loss, poisson_loglike_loss, regularization_loss, gaussian_loglike_loss, covariance_loss
+from tndm.losses import gaussian_kldiv_loss, poisson_loglike_loss, regularization_loss, \
+                        gaussian_loglike_loss, covariance_loss, mse_loss
 from .model_loader import ModelLoader
 
 
@@ -45,7 +46,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         self.disentanglement_batches: int = int(ArgsParser.get_or_default(
             kwargs, 'disentanglement_batches', 10))
         self.dropout: float = float(ArgsParser.get_or_default(
-            kwargs, 'dropout', 0.05))
+            kwargs, 'dropout', 0.15))
         self.timestep: float = float(ArgsParser.get_or_default(
             kwargs, 'timestep', 0.01))
         self.with_behaviour = True
@@ -55,8 +56,10 @@ class TNDM(ModelLoader, tf.keras.Model):
             kwargs, 'behavior_lik_type','MSE'))
         self.behavior_scale: float = float(ArgsParser.get_or_default(
             kwargs, 'behavior_scale',1.0))
-        self.soft_max_min_poisson_log_firing_rate: float = float(ArgsParser.get_or_default(
-            kwargs, 'soft_max_min_poisson_log_firing_rate', 100.0))
+        self.threshold_poisson_log_firing_rate: float = float(ArgsParser.get_or_default(
+            kwargs, 'threshold_poisson_log_firing_rate', 100.0))
+        self.GRU_pre_activation: bool = bool(ArgsParser.get_or_default(
+            kwargs, 'GRU_pre_activation', False))
 
         # convert likelihood types (str) to functions
         self.neural_loglike_loss = self.str2likelihood(self.neural_lik_type)
@@ -105,7 +108,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         self.initial_dropout = tf.keras.layers.Dropout(self.dropout)
         encoder_args: Dict[str, Any] = layers['encoder']
         self.encoded_var_min: float = ArgsParser.get_or_default_and_remove(
-            encoder_args, 'var_min', 0.1)
+            encoder_args, 'var_min', .0001)
         self.encoded_var_trainable: bool = ArgsParser.get_or_default_and_remove(
             encoder_args, 'var_trainable', True)
 
@@ -116,7 +119,8 @@ class TNDM(ModelLoader, tf.keras.Model):
         self.encoder = tf.keras.layers.Bidirectional(
             forward_layer, backward_layer=backward_layer, name='EncoderRNN', merge_mode='concat')
         self.dropout_post_encoder = tf.keras.layers.Dropout(self.dropout)
-
+        self.dropout_post_rel_decoder = tf.keras.layers.Dropout(self.dropout)
+        self.dropout_post_irr_decoder = tf.keras.layers.Dropout(self.dropout)
         # DISTRIBUTION
         # Relevant
         self.relevant_dense_mean = tf.keras.layers.Dense(
@@ -140,42 +144,36 @@ class TNDM(ModelLoader, tf.keras.Model):
         if self.rel_decoder_dim != self.rel_initial_condition_dim:
             self.relevant_dense_pre_decoder = tf.keras.layers.Dense(
                 self.rel_decoder_dim, name="RelevantDensePreDecoder", **layers['relevant_dense_pre_decoder'])
-        self.relevant_pre_decoder_activation = tf.keras.layers.Activation(
-            'tanh')
+        self.relevant_pre_decoder_activation = tf.keras.layers.Activation('tanh')
         relevant_decoder_args: Dict[str, Any] = layers['relevant_decoder']
         self.relevant_decoder_original_cell: float = ArgsParser.get_or_default_and_remove(
             relevant_decoder_args, 'original_cell', False)
-        rel_dropout = ArgsParser.get_or_default_and_remove(
-            relevant_decoder_args, 'dropout', self.dropout)
+        
         if self.relevant_decoder_original_cell:
             relevant_decoder_cell = GeneratorGRU(
                 self.rel_decoder_dim, **relevant_decoder_args)
             self.relevant_decoder = tf.keras.layers.RNN(
                 relevant_decoder_cell, return_sequences=True, time_major=False, name='RelevantDecoderGRU')
-            logger.warning('Dropout not implemented for the original decoder')
         else:
             self.relevant_decoder = tf.keras.layers.GRU(
-                self.rel_decoder_dim, return_sequences=True, time_major=False, name='RelevantDecoderGRU', dropout=rel_dropout, **relevant_decoder_args)
+                self.rel_decoder_dim, return_sequences=True, time_major=False, name='RelevantDecoderGRU', **relevant_decoder_args)
         # Irrelevant
         if self.irr_decoder_dim != self.irr_initial_condition_dim:
             self.irrelevant_dense_pre_decoder = tf.keras.layers.Dense(
                 self.irr_decoder_dim, name="IrrelevantDensePreDecoder", **layers['irrelevant_dense_pre_decoder'])
-        self.irrelevant_pre_decoder_activation = tf.keras.layers.Activation(
-            'tanh')
+        self.irrelevant_pre_decoder_activation = tf.keras.layers.Activation('tanh')
         irrelevant_decoder_args: Dict[str, Any] = layers['irrelevant_decoder']
         self.irrelevant_decoder_original_cell: float = ArgsParser.get_or_default_and_remove(
             irrelevant_decoder_args, 'original_cell', False)
-        irr_dropout = ArgsParser.get_or_default_and_remove(
-            irrelevant_decoder_args, 'dropout', self.dropout)
+        
         if self.irrelevant_decoder_original_cell:
             irrelevant_decoder_cell = GeneratorGRU(
                 self.irr_decoder_dim, **irrelevant_decoder_args)
             self.irrelevant_decoder = tf.keras.layers.RNN(
                 irrelevant_decoder_cell, return_sequences=True, time_major=False, name='IrrelevantDecoderGRU')
-            logger.warning('Dropout not implemented for the original decoder')
         else:
             self.irrelevant_decoder = tf.keras.layers.GRU(
-                self.irr_decoder_dim, return_sequences=True, time_major=False, name='IrrelevantDecoderGRU', dropout=irr_dropout, **irrelevant_decoder_args)
+                self.irr_decoder_dim, return_sequences=True, time_major=False, name='IrrelevantDecoderGRU', **irrelevant_decoder_args)
 
         # DIMENSIONALITY REDUCTION
         self.rel_factors_dense = tf.keras.layers.Dense(
@@ -211,7 +209,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         elif lik_str=='gaussian':
             ll = gaussian_loglike_loss(sigma=scale)
         elif lik_str=='MSE':
-            ll = tf.keras.losses.MeanSquaredError()
+            ll = mse_loss()
         else:
             raise NotImplementedError(
                 f'Likelihood type {lik_str} not implemented')
@@ -245,9 +243,9 @@ class TNDM(ModelLoader, tf.keras.Model):
         )
 
     @tf.function
-    def call(self, inputs, training: bool = True):
+    def call(self, inputs, training: bool = True, test_sample_mode: str='mean'):
         (g0_r, mean_r, logvar_r), (g0_i, mean_i,
-                                   logvar_i) = self.encode(inputs, training=training)
+                                   logvar_i) = self.encode(inputs, training=training, test_sample_mode=test_sample_mode)
         log_f, b, (z_r, z_i) = self.decode(
             g0_r, g0_i, inputs, training=training)
         return log_f, b, (g0_r, mean_r, logvar_r), (g0_i, mean_i, logvar_i), (z_r, z_i)
@@ -263,29 +261,37 @@ class TNDM(ModelLoader, tf.keras.Model):
         # Relevant
         if self.rel_decoder_dim != self.rel_initial_condition_dim:
             g0_r = self.relevant_dense_pre_decoder(g0_r, training=training)
-        g0_r_activated = self.relevant_pre_decoder_activation(g0_r) # Not in the original
-        g_r = self.relevant_decoder(
-            u_r, initial_state=g0_r_activated, training=training)
-        z_r = self.rel_factors_dense(g_r, training=training)
+        if self.GRU_pre_activation:
+            g0_r = self.relevant_pre_decoder_activation(g0_r) # Not in the original
+        else:
+            g0_r = g0_r
+        g_r = self.relevant_decoder(u_r, initial_state=g0_r, training=training)
+        dropped_g_r = self.dropout_post_rel_decoder(g_r, training=training) #dropout after GRU
+        z_r = self.rel_factors_dense(dropped_g_r, training=training)
 
         # Irrelevant
         if self.irr_decoder_dim != self.irr_initial_condition_dim:
             g0_i = self.irrelevant_dense_pre_decoder(g0_i, training=training)
-        g0_i_activated = self.irrelevant_pre_decoder_activation(g0_i) # Not in the original
-        g_i = self.irrelevant_decoder(
-            u_i, initial_state=g0_i_activated, training=training)
-        z_i = self.irr_factors_dense(g_i, training=training)
+        if self.GRU_pre_activation:
+            g0_i = self.irrelevant_pre_decoder_activation(g0_i) # Not in the original
+        else:
+            g0_i = g0_i
+        g_i = self.irrelevant_decoder(u_i, initial_state=g0_i, training=training)
+        dropped_g_i = self.dropout_post_irr_decoder(g_i, training=training) #dropout after GRU
+        z_i = self.irr_factors_dense(dropped_g_i, training=training)
 
         # Behaviour
         b = self.behavioural_dense(z_r, training=training)
 
         # Neural
         z = self.factors_concatenation([z_r, z_i], training=training)
-        # soft-clipping the log-firingrate log(self.timestep) so that the
+        # clipping the log-firingrate log(self.timestep) so that the
         # log-likelihood does not return NaN
         # (https://github.com/tensorflow/tensorflow/issues/47019)
         if self.neural_lik_type == 'poisson':
-            log_f = tf.tanh(self.neural_dense(z, training=training) / self.soft_max_min_poisson_log_firing_rate) * self.soft_max_min_poisson_log_firing_rate
+            log_f = tf.clip_by_value(self.neural_dense(z, training=training), 
+                                     clip_value_min=-self.threshold_poisson_log_firing_rate,
+                                     clip_value_max=self.threshold_poisson_log_firing_rate)
         else:
             log_f = self.neural_dense(z, training=training)
 
@@ -297,7 +303,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         return log_f, b, (z_r, z_i)
 
     @tf.function
-    def encode(self, neural, training: bool=True):
+    def encode(self, neural, training: bool=True, test_sample_mode: str='mean'):
         dropped_neural = self.initial_dropout(neural, training=training)
         encoded = self.encoder(dropped_neural, training=training)[0]
         dropped_encoded = self.dropout_post_encoder(encoded, training=training)
@@ -310,7 +316,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         else:
             logvar_r = tf.zeros_like(mean_r) + tf.math.log(self.encoded_var_min)
         g0_r = self.relevant_sampling(
-            tf.stack([mean_r, logvar_r], axis=-1), training=training)
+            tf.stack([mean_r, logvar_r], axis=-1), training=training, test_sample_mode=test_sample_mode)
 
         # Irrelevant
         mean_i = self.irrelevant_dense_mean(dropped_encoded, training=training)
@@ -320,7 +326,7 @@ class TNDM(ModelLoader, tf.keras.Model):
         else:
             logvar_i = tf.zeros_like(mean_i) + tf.math.log(self.encoded_var_min)
         g0_i = self.irrelevant_sampling(
-            tf.stack([mean_i, logvar_i], axis=-1), training=training)
+            tf.stack([mean_i, logvar_i], axis=-1), training=training, test_sample_mode=test_sample_mode)
 
         return (g0_r, mean_r, logvar_r), (g0_i, mean_i, logvar_i)
 
