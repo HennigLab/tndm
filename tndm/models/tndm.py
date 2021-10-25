@@ -177,9 +177,9 @@ class TNDM(ModelLoader, tf.keras.Model):
 
         # DIMENSIONALITY REDUCTION
         self.rel_factors_dense = tf.keras.layers.Dense(
-            self.rel_factors, name="RelevantFactorsDense", **layers['rel_factors_dense'])
+            self.rel_factors, use_bias=False, name="RelevantFactorsDense", **layers['rel_factors_dense'])
         self.irr_factors_dense = tf.keras.layers.Dense(
-            self.irr_factors, name="IrrelevantFactorsDense", **layers['irr_factors_dense'])
+            self.irr_factors, use_bias=False, name="IrrelevantFactorsDense", **layers['irr_factors_dense'])
 
         # BEHAVIOURAL
         behavioural_dense_args: Dict[str, Any] = layers['behavioural_dense']
