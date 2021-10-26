@@ -75,7 +75,7 @@ def plot_all_1factors(f, di, b=None, b_gt=None):
         
 def plot_behaviour(b, b_gt, di, num=20):
     for i in range(np.min((num,b.shape[0]))):
-        plt.plot(b_gt[i,:,0], b_gt[i,:,1], '--', alpha=1, color=direction_colors[di[i]], lw=1.5)
+        plt.plot(b_gt[i,:,0], b_gt[i,:,1], '--', alpha=.25, color=direction_colors[di[i]], lw=1.5)
         plt.plot(b[i,:,0],b[i,:,1], color=direction_colors[di[i]])
     plt.axis('equal')
 
