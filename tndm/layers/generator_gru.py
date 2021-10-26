@@ -13,7 +13,8 @@ class GeneratorGRU(tf.keras.layers.Layer):
     """
 
     def __init__(self, units: int, forget_bias: float = 1.0, clip_value: float = 5, name: str = "GeneratorGRU",
-                 kernel_initializer=tf.keras.initializers.GlorotNormal(), kernel_regularizer=tf.keras.regularizers.l2(l=0.01)):
+                 kernel_initializer=tf.keras.initializers.GlorotNormal(), kernel_regularizer=tf.keras.regularizers.l2(l=0.01),
+                 recurrent_regularizer=tf.keras.regularizers.l2(l=0.01)):
         """Create a GRU object.
 
         Args:
@@ -28,16 +29,17 @@ class GeneratorGRU(tf.keras.layers.Layer):
         self._clip_value: float = clip_value
         self._kernel_initializer = kernel_initializer
         self._kernel_regularizer = kernel_regularizer
+        self._recurrent_regularizer = recurrent_regularizer
 
         self.x_2_ru = tf.keras.layers.Dense(2 * self._units, use_bias=False, name="x_2_ru",
                                             kernel_initializer=self._kernel_initializer, kernel_regularizer=self._kernel_regularizer)
         self.h_2_ru = tf.keras.layers.Dense(2 * self._units, use_bias=True, name="h_2_ru",
-                                            kernel_initializer=self._kernel_initializer, kernel_regularizer=self._kernel_regularizer)
+                                            kernel_initializer=self._kernel_initializer, kernel_regularizer=self._recurrent_regularizer)
 
         self.x_2_c = tf.keras.layers.Dense(self._units, name="x_2_c", activation=None, use_bias=False,
                                            kernel_initializer=self._kernel_initializer, kernel_regularizer=self._kernel_regularizer)
         self.rh_2_c = tf.keras.layers.Dense(self._units, name="rh_2_c", activation=None, use_bias=True,
-                                            kernel_initializer=self._kernel_initializer, kernel_regularizer=self._kernel_regularizer)
+                                            kernel_initializer=self._kernel_initializer, kernel_regularizer=self._recurrent_regularizer)
 
     def get_config(self):
         config = super().get_config().copy()
