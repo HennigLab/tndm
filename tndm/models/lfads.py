@@ -154,7 +154,7 @@ class LFADS(ModelLoader, tf.keras.Model):
         if self.decoder_dim != self.initial_condition_dim:
             g0 = self.dense_pre_decoder(g0, training=training)
         if self.GRU_pre_activation:
-            g0_pre_decoder = self.relevant_pre_decoder_activation(g0) # Not in the original
+            g0_pre_decoder = self.pre_decoder_activation(g0) # Not in the original
         else:
             g0_pre_decoder = g0
         g = self.decoder(u, initial_state=g0_pre_decoder, training=training)
