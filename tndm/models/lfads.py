@@ -27,8 +27,8 @@ class LFADS(ModelLoader, tf.keras.Model):
         self.decoder_dim: int = int(ArgsParser.get_or_default(
             kwargs, 'decoder_dim', 64))
         self.factors: int = int(ArgsParser.get_or_default(kwargs, 'factors', 3))
-        self.neural_dim: int = int(ArgsParser.get_or_default(
-            kwargs, 'neural_dim', 50))
+        self.neural_dim: int = int(ArgsParser.get_or_error(
+            kwargs, 'neural_dim'))
         self.max_grad_norm: float = float(ArgsParser.get_or_default(
             kwargs, 'max_grad_norm', 200))
         self.timestep: float = float(ArgsParser.get_or_default(
@@ -40,8 +40,10 @@ class LFADS(ModelLoader, tf.keras.Model):
         self.with_behaviour = False
         self.neural_lik_type: str = str(ArgsParser.get_or_default(
             kwargs, 'neural_lik_type','poisson'))
-        self.soft_max_min_poisson_log_firing_rate: float = float(ArgsParser.get_or_default(
-            kwargs, 'soft_max_min_poisson_log_firing_rate', 100.0))
+        self.threshold_poisson_log_firing_rate: float = float(ArgsParser.get_or_default(
+            kwargs, 'threshold_poisson_log_firing_rate', 100.0))
+        self.GRU_pre_activation: bool = bool(ArgsParser.get_or_default(
+            kwargs, 'GRU_pre_activation', False))
 
         self.neural_loglike_loss = poisson_loglike_loss(self.timestep)
         
@@ -71,7 +73,7 @@ class LFADS(ModelLoader, tf.keras.Model):
         self.initial_dropout = tf.keras.layers.Dropout(self.dropout)
         encoder_args: Dict[str, Any] = layers['encoder']
         self.encoded_var_min: float = ArgsParser.get_or_default_and_remove(
-            encoder_args, 'var_min', 0.1)
+            encoder_args, 'var_min', .0001)
         self.encoded_var_trainable: bool = ArgsParser.get_or_default_and_remove(
             encoder_args, 'var_trainable', True)
 
@@ -82,6 +84,7 @@ class LFADS(ModelLoader, tf.keras.Model):
         self.encoder = tf.keras.layers.Bidirectional(
             forward_layer, backward_layer=backward_layer, name='EncoderRNN', merge_mode='concat')
         self.dropout_post_encoder = tf.keras.layers.Dropout(self.dropout)
+        self.dropout_post_decoder = tf.keras.layers.Dropout(self.dropout)
         
         # DISTRIBUTION
         self.dense_mean = tf.keras.layers.Dense(
@@ -100,20 +103,17 @@ class LFADS(ModelLoader, tf.keras.Model):
         decoder_args: Dict[str, Any] = layers['decoder']
         self.original_generator: float = ArgsParser.get_or_default_and_remove(
             decoder_args, 'original_cell', False)
-        decoder_dropout = ArgsParser.get_or_default_and_remove(
-            decoder_args, 'dropout', self.dropout)
         if self.original_generator:
             decoder_cell = GeneratorGRU(self.decoder_dim, **decoder_args)
             self.decoder = tf.keras.layers.RNN(
                 decoder_cell, return_sequences=True, time_major=False, name='DecoderGRU')
-            logger.warning('Dropout not implemented for the original decoder')
         else:
             self.decoder = tf.keras.layers.GRU(
-                self.decoder_dim, return_sequences=True, time_major=False, dropout=decoder_dropout, name='DecoderGRU', **decoder_args)
+                self.decoder_dim, return_sequences=True, time_major=False, name='DecoderGRU', **decoder_args)
 
         # DIMENSIONALITY REDUCTION
         self.dense = tf.keras.layers.Dense(
-            self.factors, name="Dense", **layers['dense'])
+            self.factors, use_bias=False, name="Dense", **layers['dense'])
 
         # NEURAL
         self.neural_dense = tf.keras.layers.Dense(
@@ -153,16 +153,21 @@ class LFADS(ModelLoader, tf.keras.Model):
 
         if self.decoder_dim != self.initial_condition_dim:
             g0 = self.dense_pre_decoder(g0, training=training)
-        g0_activated = self.pre_decoder_activation(g0)
-        g = self.decoder(u, initial_state=g0_activated, training=training)
+        if self.GRU_pre_activation:
+            g0_pre_decoder = self.relevant_pre_decoder_activation(g0) # Not in the original
+        else:
+            g0_pre_decoder = g0
+        g = self.decoder(u, initial_state=g0_pre_decoder, training=training)
+        dropped_g = self.dropout_post_decoder(g, training=training) #dropout after GRU
+        z = self.dense(dropped_g, training=training)
 
-        z = self.dense(g, training=training)
-
-        # soft-clipping the log-firingrate log(self.timestep) so that the
+        # clipping the log-firingrate log(self.timestep) so that the
         # log-likelihood does not return NaN
         # (https://github.com/tensorflow/tensorflow/issues/47019)
         if self.neural_lik_type == 'poisson':
-            log_f = tf.tanh(self.neural_dense(z, training=training) / self.soft_max_min_poisson_log_firing_rate) * self.soft_max_min_poisson_log_firing_rate
+            log_f = tf.clip_by_value(self.neural_dense(z, training=training), 
+                                     clip_value_min=-self.threshold_poisson_log_firing_rate,
+                                     clip_value_max=self.threshold_poisson_log_firing_rate)
         else:
             log_f = self.neural_dense(z, training=training)
 

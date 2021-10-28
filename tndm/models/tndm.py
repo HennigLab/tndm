@@ -257,15 +257,14 @@ class TNDM(ModelLoader, tf.keras.Model):
                        for i in range(self.relevant_decoder.cell.units)], axis=-1)
         u_i = tf.stack([tf.zeros_like(neural)[:, :, -1]
                        for i in range(self.irrelevant_decoder.cell.units)], axis=-1)
-
         # Relevant
         if self.rel_decoder_dim != self.rel_initial_condition_dim:
             g0_r = self.relevant_dense_pre_decoder(g0_r, training=training)
         if self.GRU_pre_activation:
-            g0_r = self.relevant_pre_decoder_activation(g0_r) # Not in the original
+            g0_r_pre_decoder = self.relevant_pre_decoder_activation(g0_r) # Not in the original
         else:
-            g0_r = g0_r
-        g_r = self.relevant_decoder(u_r, initial_state=g0_r, training=training)
+            g0_r_pre_decoder = g0_r
+        g_r = self.relevant_decoder(u_r, initial_state=g0_r_pre_decoder, training=training)
         dropped_g_r = self.dropout_post_rel_decoder(g_r, training=training) #dropout after GRU
         z_r = self.rel_factors_dense(dropped_g_r, training=training)
 
@@ -273,10 +272,10 @@ class TNDM(ModelLoader, tf.keras.Model):
         if self.irr_decoder_dim != self.irr_initial_condition_dim:
             g0_i = self.irrelevant_dense_pre_decoder(g0_i, training=training)
         if self.GRU_pre_activation:
-            g0_i = self.irrelevant_pre_decoder_activation(g0_i) # Not in the original
+            g0_i_pre_decoder = self.irrelevant_pre_decoder_activation(g0_i) # Not in the original
         else:
-            g0_i = g0_i
-        g_i = self.irrelevant_decoder(u_i, initial_state=g0_i, training=training)
+            g0_i_pre_decoder = g0_i
+        g_i = self.irrelevant_decoder(u_i, initial_state=g0_i_pre_decoder, training=training)
         dropped_g_i = self.dropout_post_irr_decoder(g_i, training=training) #dropout after GRU
         z_i = self.irr_factors_dense(dropped_g_i, training=training)
 
