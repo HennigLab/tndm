@@ -12,7 +12,8 @@ from tndm.data import DataManager
 
 class ModelType(Enum):
     TNDM = 'tndm'
-    LFADS = 'lfads'
+    LFADS = 'lfads'    
+    DA = 'da'
 
     @staticmethod
     def from_string(string: str) -> ModelType:
@@ -20,16 +21,18 @@ class ModelType(Enum):
             return ModelType.TNDM
         elif string.lower() == 'lfads':
             return ModelType.LFADS
+        elif string.lower() == 'da':
+            return ModelType.DA
         else:
             raise ValueError('Value not recognized.')
 
     @property
     def with_behaviour(self) -> bool:
-        return self.name.lower() == 'tndm'
+        return (self.name.lower() == 'tndm') or (self.name.lower() == 'da')
 
     @property
     def weights_num(self) -> bool:
-        return 6 if self.name.lower() == 'tndm' else 3
+        return 3 if self.name.lower() == 'lfads' else 6
 
 class Parser(object):
 

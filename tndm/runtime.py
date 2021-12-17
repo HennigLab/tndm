@@ -13,7 +13,7 @@ from datetime import datetime
 import getpass
 import socket
 
-from tndm import TNDM, LFADS
+from tndm import TNDM, LFADS, DA
 from tndm.utils import AdaptiveWeights, logger, CustomEncoder, LearningRateStopping
 from .parser import Parser, ModelType
 
@@ -99,6 +99,15 @@ class Runtime(object):
                 neural_dim=x.shape[-1],
             )
             model = LFADS(
+                **model_settings,
+                layers=layers_settings
+            )
+        elif model_type == ModelType.DA:
+            model_settings.update(
+                neural_dim=x.shape[-1],
+                behaviour_dim=y.shape[-1],
+            )
+            model = DA(
                 **model_settings,
                 layers=layers_settings
             )
@@ -250,6 +259,9 @@ class Runtime(object):
         elif isinstance(model, LFADS):
             log_f, _, z = model(neural, training=False)
             z = z.numpy()
+        elif isinstance(model, DA):
+            log_f, b, _, _, (z_r, z_i) = model(neural, training=False)
+            z = np.concatenate([z_r, z_i], axis=-1)
         else:
             raise ValueError('Model not recognized')
 
