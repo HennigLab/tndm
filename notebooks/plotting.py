@@ -41,12 +41,12 @@ def plot_2factor(f, i1, i2, di, n_show = None, ax=None, labels=None, title=None)
     plt.yticks(())
     plt.axis('equal') 
     
-def plot_all_2factors(f, di, b=None, b_gt=None):
+def plot_all_2factors(f, di, b=None, b_gt=None, n_show=10):
     n_factors = f.shape[-1]
     for f1 in range(n_factors):
         for f2 in range(f1+1,n_factors):
             ax = plt.subplot2grid((n_factors-1, n_factors-1),(f1,f2-1))
-            plot_2factor(f, f1, f2, di, ax=ax)
+            plot_2factor(f, f1, f2, di, ax=ax, n_show=n_show)
     if (b is not None) and (b_gt is not None):
         ax = plt.subplot2grid((n_factors-1, n_factors-1),(n_factors-2, 0))
         plot_behaviour(b_gt, b, di, ax=ax)
@@ -77,6 +77,12 @@ def plot_behaviour(b, b_gt, di, num=20):
     for i in range(np.min((num,b.shape[0]))):
         plt.plot(b_gt[i,:,0], b_gt[i,:,1], '--', alpha=.25, color=direction_colors[di[i]], lw=1.5)
         plt.plot(b[i,:,0],b[i,:,1], color=direction_colors[di[i]])
+    plt.axis('equal')
+
+def plot_single_behaviour(b, b_gt, di, trial=0):
+    i=trial
+    plt.plot(b_gt[i,:,0], b_gt[i,:,1], '--', alpha=.25, color=direction_colors[di[i]], lw=1.5)
+    plt.plot(b[i,:,0],b[i,:,1], color=direction_colors[di[i]], lw=2)
     plt.axis('equal')
 
 def plot_behaviour_weights(model):
